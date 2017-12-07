@@ -1,6 +1,0 @@
-*** Settings ***
-Resource          common.tsv
-
-*** Test Cases ***
-优惠券列表查看
-    SendGet_Recv200    /mobile/admin/coupon/coupon/list

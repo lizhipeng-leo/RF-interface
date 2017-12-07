@@ -1,6 +1,0 @@
-*** Settings ***
-Resource          ../资源/ResourceCommon.tsv
-
-*** Test Cases ***
-保险购买页面
-    SendGet_Recv200    /settle/insurance/roll

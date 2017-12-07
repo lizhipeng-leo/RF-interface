@@ -1,8 +1,0 @@
-*** Settings ***
-Library           String
-Library           HttpLibrary.HTTP
-
-*** Test Cases ***
-1
-    ${a}    Call Method    asdfaslkasdjkhasnm    count    a
-    log    ${a}

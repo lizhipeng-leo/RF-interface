@@ -1,5 +1,0 @@
-*** Settings ***
-Documentation     此模块需要配合下单之后填写
-Resource          ../资源/ResourceCommon.tsv
-
-*** Test Cases ***

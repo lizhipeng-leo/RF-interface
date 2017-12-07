@@ -1,9 +1,0 @@
-*** Settings ***
-Resource          CompanyCommon.tsv
-
-*** Test Cases ***
-修改密码
-    #发送post请求（修改密码）
-    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"id":2001,"oldPassword":"123456","password":"123456","repeatPassword":"123456"}    /company/employee/password
-    #验证是否添加成功（成功为0，失败为1）
-    Json Value Should Equal    ${responsedata}    /code    0

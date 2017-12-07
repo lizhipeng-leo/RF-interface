@@ -1,6 +1,0 @@
-*** Settings ***
-Resource          common.tsv
-
-*** Test Cases ***
-行程评价列表
-    SendGet_Recv200    /guide/survey/surveys
