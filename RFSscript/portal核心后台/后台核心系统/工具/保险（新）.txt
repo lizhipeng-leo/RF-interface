@@ -1,0 +1,32 @@
+*** Settings ***
+Resource          ReportCommon.tsv
+
+*** Test Cases ***
+保险列表查看
+    #发送get请求（保险列表查看）
+    SendGet_Recv200    /report/insurance/current/list
+
+搜索保险数据
+    #创建body数据
+    ${bodydata}    Create Dictionary    travelStartDate=2016-08-09    travelEndDate=2016-08-11    productName=    travelDays=
+    #发送post请求（搜索保险数据）
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /report/insurance/current/list
+
+前十页翻页查看
+    #发送get请求（前十页翻页查看）
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /report/insurance/current/list?index=${i}&size=10&tenantId=10000
+
+中间十页翻页
+    #发送post请求（中间十页查看）
+    : FOR    ${i}    IN RANGE    6000    6011
+    \    SendGet_Recv200    /report/insurance/current/list?index=${i}&size=10&tenantId=10000
+
+后十页翻页查看
+    #发送get请求（最后十页翻页查看）
+    : FOR    ${i}    IN RANGE    12130    12143
+    \    SendGet_Recv200    /report/insurance/current/list?index=${i}&size=10&tenantId=10000
+
+导出报表
+    #发送get请求（导出报表）
+    GetRequests    /report/insurance/current/export?travelEndDate=2016-08-11T00%3A00%3A00.000%2B08%3A00&tenantId=10000&travelStartDate=2016-08-09T00%3A00%3A00.000%2B08%3A00

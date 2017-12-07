@@ -1,0 +1,49 @@
+*** Settings ***
+Resource          TransportCommon.tsv
+
+*** Test Cases ***
+查看行车助理列表
+    [Documentation]    描述：验证核心系统产品->车辆->行车助理列表查看接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（查看行车助理列表）
+    SendGet_Recv200    /transport/assistant/list
+
+添加行车助理
+    [Documentation]    描述：验证核心系统产品->车辆->行车助理添加接口
+    ...
+    ...    author：李志鹏
+    Run Keyword And Ignore Error    SendPost_Recv200    application/json;charset=UTF-8    \    /transport/assistant/delete/109
+    #发送post请求（添加行车助理）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "employeeId":1095, \ \ \ \ "account":"1100096", \ \ \ \ "name":"罗双强", \ \ \ \ "mobile":"18482190300", \ \ \ \ "nickName":"小强", \ \ \ \ "email":"", \ \ \ \ "qq":"", \ \ \ \ "wechat":"", \ \ \ \ "avatar":"http://images.simpletour.com/simpletour/images/assistant/d2495e3419b37cf2c6f4f5d7739832eb.png", \ \ \ \ "photo":"http://images.simpletour.com/simpletour/images/assistant/3673fffd65379e7b5c0e4f7710fab2c3.png", \ \ \ \ "remark":"" }    /transport/assistant/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+查询行车助理
+    #发送get请求（查询行车助理）
+    ${responsedata}    SendGet_Recv200    /transport/assistant/list?account=1100096&name=罗双强&nickName=&mobile=
+    #查询数据库里面的id
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."trans_assistant" WHERE nick_name='小强' AND del='f';
+    #设置id为测试套件id
+    Set Suite Variable    ${assistantid}    ${id}
+
+查看行车助理信息
+    #发送get请求（查看行车助理信息）
+    SendGet_Recv200    /transport/assistant/edit/${assistantid}
+
+更新行车助理信息
+    #发送post请求（更新助理信息）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "employeeId":1095, \ \ \ \ "id":${assistantid}, \ \ \ \ "account":"1100096", \ \ \ \ "name":"罗双强", \ \ \ \ "mobile":"18482190300", \ \ \ \ "nickName":"小强", \ \ \ \ "email":"", \ \ \ \ "qq":"", \ \ \ \ "wechat":"", \ \ \ \ "avatar":"http://images.simpletour.com/simpletour/images/assistant/d2495e3419b37cf2c6f4f5d7739832eb.png", \ \ \ \ "photo":"http://images.simpletour.com/simpletour/images/assistant/3673fffd65379e7b5c0e4f7710fab2c3.png", \ \ \ \ "remark":"" }    /transport/assistant/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页翻页
+    #发送get请求（循环下一页翻页）
+    : FOR    ${i}    IN RANGE    10
+    \    SendGet_Recv200    /transport/assistant/list?index=${i}&size=10&totalCount=0
+
+删除行车助理
+    #发送post请求（删除助理）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /transport/assistant/delete/${assistantid}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0

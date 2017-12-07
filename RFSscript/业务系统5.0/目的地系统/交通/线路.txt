@@ -1,0 +1,97 @@
+*** Settings ***
+Resource          ../common.tsv
+
+*** Test Cases ***
+线路列表
+    SendGet_Recv200    /transport/line
+
+添加线路
+    #创建一个6位的随机字符串
+    ${randomstring}    Generate Random String    6    [LETTERS][NUMBERS]
+    #拼接成随机名称
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #查询目的地
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","pageIndex":1,"pageSize":10}    /common/dest/select
+    Json Value Should Equal    ${response}    /code    0
+    #获取目的地名字
+    ${areaName1}    Get Json Value    ${response}    /data/0/name
+    ${areaName2}    Get Json Value    ${response}    /data/1/name
+    ${areaName3}    Get Json Value    ${response}    /data/2/name
+    Set Suite Variable    ${areaName1}    ${areaName1}
+    Set Suite Variable    ${areaName2}    ${areaName2}
+    Set Suite Variable    ${areaName3}    ${areaName3}
+    #添加线路
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","customerRequirement":"ONE_CUSTOMER_ONE_RES","lineNodeForms":[{"id":0,"type":"DEPARTURE","name":${areaName1},"describe":"节点描述1","arriveTime":0,"departTime":0,"departDay":{"value":0,"text":"当"},"departHour":{"value":0,"text":0},"departMinute":{"value":0,"text":0},"arriveDay":{"value":0,"text":"当"},"arriveHour":{"value":0,"text":0},"arriveMinute":{"value":0,"text":0},"index":0},{"id":0,"type":"PATH","name":${areaName2},"describe":"节点描述2","arriveTime":0,"departTime":0,"departDay":{"value":0,"text":"当"},"departHour":{"value":0,"text":0},"departMinute":{"value":0,"text":0},"arriveDay":{"value":0,"text":"当"},"arriveHour":{"value":0,"text":0},"arriveMinute":{"value":0,"text":0},"index":1},{"id":0,"type":"ARRIVAL","name":${areaName3},"describe":"节点描述3","arriveTime":0,"departTime":0,"departDay":{"value":0,"text":"当"},"departHour":{"value":0,"text":0},"departMinute":{"value":0,"text":0},"arriveDay":{"value":0,"text":"当"},"arriveHour":{"value":0,"text":0},"arriveMinute":{"value":0,"text":0},"index":2}],"credentialRequirement":["ID","TW_TRAVEL_PERMIT","HKM_TRAVEL_PERMIT","PASSPORT","STUDENT_ID","SOLDIER_ID","DRIVER_ID","HONGKONG_MACAU_PASSPORT","SEAFARER_ID","FOREIGNER_PERMANENT_RESIDENCE_ID","TW_PASSPORT","OTHER"]}    /transport/line/add
+    Json Value Should Equal    ${resp}    /code    0
+
+搜索线路
+    SendGet_Recv200    /transport/line/list?id=&name=&cycle=&destinations=
+    #查询线路id
+    ${lineid}    SelectFromPsycopg    SELECT * FROM "corp"."line" WHERE "name"='${information}';
+    Set Suite Variable    ${lineid}    ${lineid}
+
+查看线路
+    SendGet_Recv200    /transport/line/view/${lineid}
+
+更新线路
+    #查询节点id
+    ${nodeID1}    SelectFromPsycopg    SELECT * FROM "corp"."node" WHERE line_id=${lineid} AND "type"='DEPARTURE';
+    ${nodeID2}    SelectFromPsycopg    SELECT * FROM "corp"."node" WHERE line_id=${lineid} AND "type"='PATH';
+    ${nodeID3}    SelectFromPsycopg    SELECT * FROM "corp"."node" WHERE line_id=${lineid} AND "type"='ARRIVAL';
+    #查询versionid
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "corp"."line" WHERE "name"='${information}';
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    {"id":${lineid},"version":${version},"name":"${information}","customerRequirement":"ONE_CUSTOMER_ONE_RES","nodeForms":[{"id":${nodeID1},"type":"DEPARTURE","name":${areaName1},"describe":"节点描述1","departTime":0,"arriveTime":0,"index":0,"departDay":{"value":0,"text":"当"},"departHour":{"value":0,"text":"0"},"departMinute":{"value":0,"text":"0"},"arriveDay":{"value":0,"text":"当"},"arriveHour":{"value":0,"text":"0"},"arriveMinute":{"value":0,"text":"0"}},{"id":${nodeID2},"type":"PATH","name":${areaName2},"describe":"节点描述2","departTime":0,"arriveTime":0,"index":1,"departDay":{"value":0,"text":"当"},"departHour":{"value":0,"text":"0"},"departMinute":{"value":0,"text":"0"},"arriveDay":{"value":0,"text":"当"},"arriveHour":{"value":0,"text":"0"},"arriveMinute":{"value":0,"text":"0"}},{"id":${nodeID3},"type":"ARRIVAL","name":${areaName3},"describe":"节点描述3","departTime":0,"arriveTime":0,"index":2,"departDay":{"value":0,"text":"当"},"departHour":{"value":0,"text":"0"},"departMinute":{"value":0,"text":"0"},"arriveDay":{"value":0,"text":"当"},"arriveHour":{"value":0,"text":"0"},"arriveMinute":{"value":0,"text":"0"}}],"credentialRequirement":["ID","TW_TRAVEL_PERMIT","HKM_TRAVEL_PERMIT","PASSPORT","STUDENT_ID","SOLDIER_ID","DRIVER_ID","HONGKONG_MACAU_PASSPORT","SEAFARER_ID","FOREIGNER_PERMANENT_RESIDENCE_ID","TW_PASSPORT","OTHER"]}    /transport/line/edit
+    Json Value Should Equal    ${resp}    /code    0
+
+区段列表查看
+    SendGet_Recv200    /transport/section/line/${lineid}/list
+
+添加区段
+    #查询资源所属主体
+    ${resourceOwnerID}    SelectFromPsycopg    SELECT * FROM "corp"."resource_owner" WHERE company_id IS NULL ORDER BY "id" DESC LIMIT 1;
+    ${resourceOwnerName}    SelectFromPsycopg    SELECT "name" FROM "corp"."resource_owner" WHERE "id"=${resourceOwnerID};
+    #查询运行线路
+    ${operationLineName}    SelectFromPsycopg    SELECT "name" FROM "corp"."operation_line" ORDER BY "id" DESC LIMIT 1;
+    ${operationLineID}    SelectFromPsycopg    SELECT * FROM "corp"."operation_line" ORDER BY "id" DESC LIMIT 1;
+    ${resourceOwnerName}    Evaluate    '${resourceOwnerName}'.decode('UTF-8')
+    ${operationLineName}    Evaluate    '${operationLineName}'.decode('UTF-8')
+    Set Suite Variable    ${resourceOwnerID}    ${resourceOwnerID}
+    Set Suite Variable    ${resourceOwnerName}    ${resourceOwnerName}
+    Set Suite Variable    ${operationLineName}    ${operationLineName}
+    Set Suite Variable    ${operationLineID}    ${operationLineID}
+    #查询routeid
+    ${routeID}    SelectFromPsycopg    SELECT * FROM "corp"."route" WHERE line_id=${lineid};
+    Set Suite Variable    ${routeID}    ${routeID}
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"lineId":${lineid},"name":"${information}","operationLine":"${operationLineName}","operationLineId":"${operationLineID}","resourceOwner":"${resourceOwnerName}","resourceOwnerId":"${resourceOwnerID}","boardingAddress":"四川省成都市青羊区西安中路一巷35号附3号","dropOffAddress":"四川省成都市青羊区少城路39号","boardingLocation":{"x":104.05682,"y":30.671739},"dropOffLocation":{"x":104.063432,"y":30.665464},"routes":[${routeID}],"deadline":{"day":0,"hour":0,"minute":0},"refundRuleForms":[{"day":0,"hour":0,"ratio":0}]}    /transport/section/add
+    Json Value Should Equal    ${response}    /code    0
+
+搜索区段
+    SendGet_Recv200    /transport/section/line/11/list?id=&name=&depart=&arrive=&soldOut=&code=
+    #搜索区段id
+    ${sectionID}    SelectFromPsycopg    SELECT * FROM "corp"."section" WHERE line_id=${lineid};
+    Set Suite Variable    ${sectionID}    ${sectionID}
+
+查看区段
+    SendGet_Recv200    /transport/section/view/${sectionID}
+
+更新区段
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"id":${sectionID},"lineId":${lineid},"version":0,"name":"${information}","operationLine":"${operationLineName}","operationLineId":${operationLineID},"resourceOwner":"${resourceOwnerName}","resourceOwnerId":${resourceOwnerID},"routes":[${routeID}],"boardingAddress":"四川省成都市青羊区西安中路一巷35号附3号","dropOffAddress":"四川省成都市青羊区少城路39号","boardingLocation":{"x":104.05682,"y":30.671739},"dropOffLocation":{"x":104.063432,"y":30.665464},"deadline":{"day":0,"hour":0,"minute":0},"refundRuleForms":[{"day":0,"hour":0,"ratio":0}]}    /transport/section/edit
+    Json Value Should Equal    ${response}    /code    0
+
+区段上线
+    #查询versionid
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "corp"."section" WHERE "id"=${sectionID};
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    \    /transport/section/offline/${sectionID}/${version}
+    Json Value Should Equal    ${resp}    /code    0
+
+区段下线
+    #查询versionid
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "corp"."section" WHERE "id"=${sectionID};
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    \    /transport/section/offline/${sectionID}/${version}
+    Json Value Should Equal    ${resp}    /code    0
+
+10条/页查看
+    SendGet_Recv200    /transport/section/line/${lineid}/list?pageIndex=0&lineId=${lineid}&pageSize=10
+
+50条/页查看
+    SendGet_Recv200    /transport/section/line/${lineid}/list?pageIndex=0&lineId=${lineid}&pageSize=50

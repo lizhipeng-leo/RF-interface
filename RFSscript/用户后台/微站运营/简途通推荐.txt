@@ -1,0 +1,49 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+简途通推荐列表
+    SendGet_Recv200    /mobile/admin/wechat/recommend/stpass/list
+
+添加简途通推荐
+    #查询区域
+    ${areaResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    :FOR    ${i}    IN RANGE    0    10
+    \    ${areaId}    Get Json Value    ${areaResponse}    /data/${i}/id
+    \    ${areaName}    Get Json Value    ${areaResponse}    /data/${i}/name
+    \    Exit For Loop If    ${areaName}=="四川"
+    Set Suite Variable    ${areaId}    ${areaId}
+    Set Suite Variable    ${areaName}    ${areaName}
+    :FOR    ${i}    IN RANGE    0    10
+    \    ${lineResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":2,"size":10}    /wechat/tourism/stpass/${areaId}/select
+    \    ${LineName}    Get Json Value    ${lineResponse}    /data/${i}/name
+    \    ${LineId}    Get Json Value    ${lineResponse}    /data/${i}/id
+    \    ${id}    SelectCountFromPsycopg    SELECT * FROM "public"."app_channel_content" WHERE channel_type='RECOMMEND_STPASS' AND target_id=${LineId};
+    \    Exit For Loop If    ${id}==0
+    Set Suite Variable    ${LineName}    ${LineName}
+    Set Suite Variable    ${LineId}    ${LineId}
+    #添加简途通兑换推荐
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "weight": "1", \ \ \ \ "areaId": ${areaId}, \ \ \ \ "areaName": ${areaName}, \ \ \ \ "targetType": "stpass", \ \ \ \ "targetName": ${LineName}, \ \ \ \ "targetId": ${LineId}, \ \ \ \ "id": null, \ \ \ \ "version": 0 }    /mobile/admin/wechat/recommend/stpass/add
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索简途通推荐
+    #去掉前后的双引号
+    ${s}    Strip String    ${LineName}    characters=""
+    #创建bodydata
+    ${bodydata}    Create Dictionary    areaId=    name=${s}
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /mobile/admin/wechat/recommend/stpass/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${StpassID}    ${id}
+
+查看简途通推荐信息
+    SendGet_Recv200    /mobile/admin/wechat/recommend/edit/${StpassID}
+
+更新简途通推荐信息
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "weight": "1", \ \ \ \ "areaId": ${areaId}, \ \ \ \ "areaName": ${areaName}, \ \ \ \ "targetType": "stpass", \ \ \ \ "targetName": ${LineName}, \ \ \ \ "targetId": ${LineId}, \ \ \ \ "id": ${StpassID}, \ \ \ \ "version": 0 }    /mobile/admin/wechat/recommend/edit/
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除简途通推荐
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /mobile/admin/wechat/recommend/delete/${StpassID}
+    Json Value Should Equal    ${responsedata}    /code    0

@@ -1,0 +1,117 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+门票列表
+    SendGet_Recv200    /app/product/ticket/list
+
+添加门票产品
+    #取出关联产品的id和name
+    : FOR    ${i}    IN RANGE    2    10
+    \    ${productsID}    ${productsName}    ${status}    loop
+    \    Exit For Loop If    '${status}'=='false'
+    \    ${productsID}    ${productsName}    ${status}    forloop    ${i}
+    \    Exit For Loop If    '${status}'=='false'
+    #设置变量为测试套件变量
+    Set Suite Variable    ${productsID}    ${productsID}
+    Set Suite Variable    ${productsName}    ${productsName}
+    #查看所属资源
+    ${resourceResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/resource/ticket/select
+    #获取资源id和name
+    ${resourceID}    Get Json Value    ${resourceResponse}    /data/0/id
+    ${resourceName}    Get Json Value    ${resourceResponse}    /data/0/name
+    #设置变量为测试套件变量
+    Set Suite Variable    ${resourceID}    ${resourceID}
+    Set Suite Variable    ${resourceName}    ${resourceName}
+    #查看标签
+    ${tagResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/tag/select
+    ${tagID}    Get Json Value    ${tagResponse}    /data/0/id
+    ${tagName}    Get Json Value    ${tagResponse}    /data/0/name
+    #设置变量为测试套件变量
+    Set Suite Variable    ${tagID}    ${tagID}
+    Set Suite Variable    ${tagName}    ${tagName}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #添加门票产品
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "sellingPrice": "1", \ \ \ \ "price": "1", \ \ \ \ "salesVolume": "1", \ \ \ \ "appResourceId": ${resourceID}, \ \ \ \ "appResourceName": ${resourceName}, \ \ \ \ "includeItems": "<h3>这里请输入标题</h3>", \ \ \ \ "notice": "<h3>这里请输入标题</h3>", \ \ \ \ "cancelRescheduleRule": "<h3>这里请输入标题</h3>", \ \ \ \ "appTagId": ${tagID}, \ \ \ \ "appTagName": ${tagName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_product/c22fe0d9e481f33679357740d59dd836.png", \ \ \ \ "listImage": "https://images.simpletour.com/simpletour/images/app_product/79ec3d2054e23ac0638ca58208e0c892.png", \ \ \ \ "weight": "1", \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "isMustExperience": false, \ \ \ \ "productId": ${productsID}, \ \ \ \ "productName": ${productsName}, \ \ \ \ "deadline": -64800, \ \ \ \ "deadlineStr": "0-18-0", \ \ \ \ "instructions": "<h3>这里请输入标题</h3>", \ \ \ \ "remarkObject": { \ \ \ \ \ \ \ \ "remarkName": "", \ \ \ \ \ \ \ \ "remarkContent": "" \ \ \ \ }, \ \ \ \ "needRemark": false, \ \ \ \ "needAssistant": true, \ \ \ \ "needInfo": "name,mobile", \ \ \ \ "platformInfo": "APP,WZ", \ \ \ \ "id": null }    /app/product/ticket
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索门票产品
+    ${bodydata}    Create Dictionary    name=    associatedProduct=    isMustExperience=    online=    platformInfo=
+    ...    appDestinationName=    appDestinationId=
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/product/ticket/list
+    #获取ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_product" WHERE "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${ticketID}    ${id}
+
+查看门票产品信息
+    SendGet_Recv200    /app/product/ticket/${ticketID}?appDestinationName=&associatedProduct=&index=1&name=&platformInfo=&size=10&type=ticket
+
+更新门票产品信息
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "sellingPrice": "1", \ \ \ \ "price": "1", \ \ \ \ "salesVolume": "1", \ \ \ \ "appResourceId": ${resourceID}, \ \ \ \ "appResourceName": ${resourceName}, \ \ \ \ "includeItems": "<h3>这里请输入标题</h3>", \ \ \ \ "notice": "<h3>这里请输入标题</h3>", \ \ \ \ "cancelRescheduleRule": "<h3>这里请输入标题</h3>", \ \ \ \ "appTagId": ${tagID}, \ \ \ \ "appTagName": ${tagName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_product/c22fe0d9e481f33679357740d59dd836.png", \ \ \ \ "listImage": "https://images.simpletour.com/simpletour/images/app_product/79ec3d2054e23ac0638ca58208e0c892.png", \ \ \ \ "weight": "1", \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "isMustExperience": false, \ \ \ \ "productId": ${productsID}, \ \ \ \ "productName": ${productsName}, \ \ \ \ "deadline": -64800, \ \ \ \ "deadlineStr": "0-18-0", \ \ \ \ "instructions": "<h3>这里请输入标题</h3>", \ \ \ \ "remarkObject": { \ \ \ \ \ \ \ \ "remarkName": "", \ \ \ \ \ \ \ \ "remarkContent": "" \ \ \ \ }, \ \ \ \ "needRemark": false, \ \ \ \ "needAssistant": true, \ \ \ \ "needInfo": "name,mobile", \ \ \ \ "platformInfo": "APP,WZ", \ \ \ \ "id": ${ticketID} }    /app/product/ticket/276
+    Json Value Should Equal    ${responsedata}    /code    0
+
+上线门票产品
+    ${responseData}    SendGet_Recv200    /app/product/ticket/${ticketID}/status/true
+    Json Value Should Equal    ${responseData}    /code    0
+
+下线门票产品
+    ${responseData}    SendGet_Recv200    /app/product/ticket/${ticketID}/status/false
+    Json Value Should Equal    ${responseData}    /code    0
+
+获取被复制门票产品信息
+    SendGet_Recv200    /app/product/ticket/copy/${ticketID}?index=1&size=10&type=ticket
+
+生成复制门票产品
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}copy
+    #取出关联产品的id和name
+    :FOR    ${i}    IN RANGE    2    10
+    \    ${productsID}    ${productsName}    ${status}    loop
+    \    Exit For Loop If    '${status}'=='false'
+    \    ${productsID}    ${productsName}    ${status}    forloop    ${i}
+    \    Exit For Loop If    '${status}'=='false'
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "sellingPrice": "1", \ \ \ \ "price": "1", \ \ \ \ "salesVolume": "1", \ \ \ \ "appResourceId": ${resourceID}, \ \ \ \ "appResourceName": ${resourceName}, \ \ \ \ "includeItems": "<h3>这里请输入标题</h3>", \ \ \ \ "notice": "<h3>这里请输入标题</h3>", \ \ \ \ "cancelRescheduleRule": "<h3>这里请输入标题</h3>", \ \ \ \ "appTagId": ${tagID}, \ \ \ \ "appTagName": ${tagName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_product/c22fe0d9e481f33679357740d59dd836.png", \ \ \ \ "listImage": "https://images.simpletour.com/simpletour/images/app_product/79ec3d2054e23ac0638ca58208e0c892.png", \ \ \ \ "weight": "1", \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "isMustExperience": false, \ \ \ \ "productId": ${productsID}, \ \ \ \ "productName": ${productsName}, \ \ \ \ "deadline": -64800, \ \ \ \ "deadlineStr": "0-18-0", \ \ \ \ "instructions": "<h3>这里请输入标题</h3>", \ \ \ \ "remarkObject": { \ \ \ \ \ \ \ \ "remarkName": "", \ \ \ \ \ \ \ \ "remarkContent": "" \ \ \ \ }, \ \ \ \ "needRemark": false, \ \ \ \ "needAssistant": true, \ \ \ \ "needInfo": "name,mobile", \ \ \ \ "platformInfo": "APP,WZ", \ \ \ \ "id": null }    /app/product/ticket
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除门票产品
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/product/ticket/delete/${ticketID}
+    Json Value Should Equal    ${responsedata}    /code    0
+    #查询新复制的门票id
+    #获取ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_product" WHERE "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${CopyticketID}    ${id}
+    #删除新复制的门票
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/product/ticket/delete/${CopyticketID}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页翻页
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/product/ticket/list?index=${i}&size=10&type=ticket
+
+*** Keywords ***
+forloop
+    [Arguments]    ${j}
+    ${productsResponse}    SendPost_Recv200    application/json;charset=UTF-8    {index: ${j}, size: 10, name: ""}    /app/product/ticket/products
+    : FOR    ${i}    IN RANGE    0    10
+    \    ${status}    Get Json Value    ${productsResponse}    /data/${i}/used
+    \    ${productsID}    Get Json Value    ${productsResponse}    /data/${i}/id
+    \    ${productsName}    Get Json Value    ${productsResponse}    /data/${i}/name
+    \    Exit For Loop If    '${status}'=='false'
+    [Return]    ${productsID}    ${productsName}    ${status}
+
+loop
+    ${productsResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/product/ticket/products
+    : FOR    ${i}    IN RANGE    0    10
+    \    ${status}    Get Json Value    ${productsResponse}    /data/${i}/used
+    \    ${productsID}    Get Json Value    ${productsResponse}    /data/${i}/id
+    \    ${productsName}    Get Json Value    ${productsResponse}    /data/${i}/name
+    \    Exit For Loop If    '${status}'=='false'
+    [Return]    ${productsID}    ${productsName}    ${status}

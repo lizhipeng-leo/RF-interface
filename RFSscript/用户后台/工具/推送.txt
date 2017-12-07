@@ -1,0 +1,29 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+推送列表
+    SendGet_Recv200    /app/msgtask/list/
+
+添加推送
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "title": "${information}", \ \ \ \ "type": "USERMSG", \ \ \ \ "content": "自动化接口创建的推送内容", \ \ \ \ "link": "https://baidu.com", \ \ \ \ "shareUrl": "https://baidu.com", \ \ \ \ "linkType": "H5", \ \ \ \ "sendTime": "", \ \ \ \ "appAreaId": "", \ \ \ \ "mobiles": "13648009749", \ \ \ \ "isInstantSended": "true", \ \ \ \ "isShare": false, \ \ \ \ "pic": "", \ \ \ \ "id": "" }    /app/msgtask
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索推送
+    ${bodydata}    Create Dictionary    title=${information}    areaId=    messageStatus=
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/msgtask/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${mstaskID}    ${id}
+
+查看推送信息
+    SendGet_Recv200    /app/msgtask/${mstaskID}
+
+下一页
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/msgtask/list?index=${i}&size=10

@@ -1,0 +1,35 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+文章标签列表
+    SendGet_Recv200    /app/tag/list?type=ARTICLE
+
+添加文章标签
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    4    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    接口${randomstring}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"type":"ARTICLE","name":"${information}","weight":"1","version":null,"id":null}    /app/tag/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索文章标签
+    #创建bodydata
+    ${bodydata}    Create Dictionary    name=${information}    type=ARTICLE
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/tag/list
+    #获取公司ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${WtagID}    ${id}
+
+查看文章标签信息
+    SendGet_Recv200    /app/tag/${WtagID}
+
+更新文章标签信息
+    #查询versionID
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "public"."app_tag" WHERE "name"='${information}';
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"type":"ARTICLE","name":"${information}","weight":1,"version":0,"id":${WtagID}}    /app/tag/${WtagID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0

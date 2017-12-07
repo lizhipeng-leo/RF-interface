@@ -1,0 +1,63 @@
+*** Settings ***
+Resource          CompanyCommon.tsv
+
+*** Test Cases ***
+查看人员信息列表
+    #发送get请求（查看人员信息列表）
+    SendGet_Recv200    /company/employee/list
+
+所属角色搜索
+    #发送post请求（所属角色搜索）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "车辆", \ \ \ \ "index": 1, \ \ \ \ "size": 10 }    /company/role/select
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+添加人员
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口测试${randomstring}
+    #发送psot请求（添加人员）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "jobno": "", \ \ \ \ "isAdmin": false, \ \ \ \ "name": "${information}", \ \ \ \ "mobile": "18908225658", \ \ \ \ "avatar": "", \ \ \ \ "remark": "", \ \ \ \ "roleId": 75, \ \ \ \ "version": 0, \ \ \ \ "id": null }    /company/employee/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索人员信息
+    #创建body数据
+    ${bodydata}    Create Dictionary    jobNo=    name=${information}
+    #发送post请求（搜索人员信息）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /company/employee/list
+    #获取人员id
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${personnelID}    ${id}
+
+更新人员信息
+    #查询数据库内人员对应的id编号
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."sys_employee" WHERE "name"='${information}';
+    #设置id为测试套件变量
+    Set Suite Variable    ${informationID}    ${id}
+    #发送post请求（更新人员信息）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "jobno": ${personnelID}, \ \ \ \ "isAdmin": false, \ \ \ \ "name": "${information}", \ \ \ \ "mobile": "18908225658", \ \ \ \ "avatar": "http://images.simpletour.com/simpletour/images/company_employee/ba887a376cd4fb1b6d9771dae2200fbb.jpg", \ \ \ \ "remark": "", \ \ \ \ "roleId": 75, \ \ \ \ "version": 0, \ \ \ \ "id": ${informationID} }    /company/employee/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+查看人员信息内容
+    #发送get请求（查看人员信息）
+    SendGet_Recv200    /company/employee/edit/${informationID}
+
+删除人员信息
+    #发送post请求（删除人员信息）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /company/employee/delete/${informationID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+前十页翻页
+    #发送get请求（前十页翻页）
+    :FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /company/employee/list?index=${i}&size=10&tenantId=10000
+
+后十页翻页
+    #发送get请求（后十页翻页）
+    :FOR    ${i}    IN RANGE    11    21
+    \    SendGet_Recv200    /company/employee/list?index=${i}&size=10&tenantId=10000

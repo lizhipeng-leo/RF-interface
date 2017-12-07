@@ -1,0 +1,21 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+用户列表
+    SendGet_Recv200    /app/feedback/list
+
+搜索用户反馈列表
+    ${bodydata}    Create Dictionary    content=    startDate=    endDate=    userName=
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/feedback/list
+    #获取ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_feedback" ORDER BY createdtime DESC;
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${feedbackID}    ${id}
+
+查看用户反馈列表
+    SendGet_Recv200    /app/feedback/detail/${feedbackID}
+
+下一页
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/feedback/list?content=&endDate=&index=${i}&size=10&startDate=&userName=

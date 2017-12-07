@@ -1,0 +1,50 @@
+*** Settings ***
+Resource          ResourceCommon.tsv
+
+*** Test Cases ***
+供应商列表查看
+    [Documentation]    描述：验证核心系统资源->供应商->供应商列表查看接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（供应商列表）
+    SendGet_Recv200    /resource/osp/list
+
+添加供应商
+    [Documentation]    描述：验证核心系统资源->供应商->添加供应商接口
+    ...
+    ...    author：李志鹏
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    成都${randomstring}
+    #发送post请求（添加供应商）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name":"${information}", \ \ \ \ "remark":null, \ \ \ \ "version":0, \ \ \ \ "id":null }    /resource/osp/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+    #查询供应商id
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."tr_osp" WHERE del='f' AND "name"='${information}';
+    #设置供应商id为测试套件变量
+    Set Suite Variable    ${OspID}    ${id}
+
+查看供应商信息
+    [Documentation]    描述：验证核心系统资源->供应商->查看供应商信息接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（查看供应商信息）
+    SendGet_Recv200    /resource/osp/edit/${OspID}
+
+更新供应商信息
+    [Documentation]    描述：验证核心系统资源->供应商->更新供应商信息接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（更新供应商信息）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name":"${information}", \ \ \ \ "remark":null, \ \ \ \ "version":0, \ \ \ \ "id":${OspID} }    /resource/osp/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除供应商
+    [Documentation]    描述：验证核心系统资源->供应商->删除供应商接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（删除供应商）
+    SendPost_Recv200    application/json;charset=UTF-8    \    /resource/osp/delete/${OspID}

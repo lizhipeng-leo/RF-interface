@@ -1,0 +1,68 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+销售协议列表
+    SendGet_Recv200    /sale/agreement
+
+添加销售协议
+    #获取当前时间，精确到天
+    ${time}    Get Time
+    #取出年和月
+    ${day}    Split String    ${time}    ${SPACE}
+    log    ${day[0]}
+    Set Suite Variable    ${day[0]}    ${day[0]}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    Set Suite Variable    ${information1}    废弃协议${randomstring}
+    #查询渠道
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":null,"status":"ENABLED","pageIndex":0,"pageSize":100}    /sale/channel/select
+    ${channelId}    Get Json Value    ${response}    /data/0/id
+    Set Suite Variable    ${channelId}    ${channelId}
+    #添加销售协议
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"companyId":null,"channelId":${channelId},"id":null,"name":"${information}","effectFrom":"${day[0]}","effectUpto":"${day[0]}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"settlementOffset":"1","paymentType":"ALIPAY","payeeBankInfo":"","payeeName":"姓名","payeeAccount":"账号","status":"DRAFT"}    /sale/agreement/add
+    Json Value Should Equal    ${responsedata}    /code    0
+    #添加一个废弃的协议
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"companyId":null,"channelId":${channelId},"id":null,"name":"${information1}","effectFrom":"${day[0]}","effectUpto":"${day[0]}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"settlementOffset":"1","paymentType":"ALIPAY","payeeBankInfo":"","payeeName":"姓名","payeeAccount":"账号","status":"DRAFT"}    /sale/agreement/add
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索协议
+    SendGet_Recv200    /sale/agreement/list?agreementId=&channelName=&saleChannelId=&agreementName=&effectFrom=&effectUpto=&status=ALL
+
+查看协议
+    #查询协议id
+    ${agreementID}    SelectFromPsycopg    SELECT * FROM "corp"."sale_agreement" WHERE "name"='${information}' AND sale_channel_id=${channelId};
+    Set Suite Variable    ${agreementID}    ${agreementID}
+    SendGet_Recv200    /sale/agreement/detail/0/${agreementID}
+
+编辑协议
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"companyId":null,"channelId":${channelId},"id":${agreementID},"name":"${information}","effectFrom":"${day[0]}","effectUpto":"${day[0]}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"settlementOffset":"1","paymentType":"ALIPAY","payeeBankInfo":"","payeeName":"姓名","payeeAccount":"账号","status":"DRAFT"}    /sale/agreement/edit
+    Json Value Should Equal    ${response}    /code    0
+
+确认协议
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/agreement/changeStatus/0/${agreementID}/APPROVED
+    Json Value Should Equal    ${response}    /code    0
+
+终止协议
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/agreement/changeStatus/0/${agreementID}/TERMINATED
+    Json Value Should Equal    ${response}    /code    0
+
+废弃协议
+    #查询废弃协议id
+    ${agreementID1}    SelectFromPsycopg    SELECT * FROM "corp"."sale_agreement" WHERE "name"='${information1}' AND sale_channel_id=${channelId};
+    Set Suite Variable    ${agreementID1}    ${agreementID1}
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/agreement/changeStatus/0/${agreementID1}/SUSPENDED
+    Json Value Should Equal    ${response}    /code    0
+
+下一页查看
+    :FOR    ${i}    IN RANGE    0    10
+    \    SendGet_Recv200    /sale/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&firstError=&pageSize=10&pageIndex=${i}&domain=%2Fsale%2Fagreement%2F&channelId=0&errors=
+
+10条/页数据查看
+    SendGet_Recv200    /sale/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&firstError=&pageSize=10&pageIndex=0&domain=%2Fsale%2Fagreement%2F&channelId=0&errors=
+
+50条/页数据查看
+    SendGet_Recv200    /sale/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&firstError=&pageSize=50&pageIndex=0&domain=%2Fsale%2Fagreement%2F&channelId=0&errors=

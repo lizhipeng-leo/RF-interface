@@ -1,0 +1,92 @@
+*** Settings ***
+Resource          ResourceCommon.tsv
+
+*** Test Cases ***
+元素列表查看
+    [Documentation]    描述：验证核心系统资源->元素->元素列表查看接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（元素列表查看）
+    SendGet_Recv200    /resource/procurement/list
+
+搜索元素
+    #搜索住宿元素
+    ${body}    Create Dictionary    name=    destinationName=    resourceName=    resourceType=hotel    status=online
+    ...    inventory=all
+    ${response}    SendPost_Recv200    application/x-www-form-urlencoded    ${body}    /resource/procurement/list
+    #获取车辆模板ID
+    ${id}    Get Element Text    ${response}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${hotelID}    ${id}
+    #搜索景点元素
+    ${body}    Create Dictionary    name=    destinationName=    resourceName=    resourceType=scenic    status=online
+    ...    inventory=all
+    ${response}    SendPost_Recv200    application/x-www-form-urlencoded    ${body}    /resource/procurement/list
+    #获取车辆模板ID
+    ${id}    Get Element Text    ${response}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${scenicID}    ${id}
+    #搜索餐饮元素
+    ${body}    Create Dictionary    name=    destinationName=    resourceName=    resourceType=catering    status=online
+    ...    inventory=all
+    ${response}    SendPost_Recv200    application/x-www-form-urlencoded    ${body}    /resource/procurement/list
+    #获取车辆模板ID
+    ${id}    Get Element Text    ${response}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${cateringID}    ${id}
+    #搜索娱乐元素
+    ${body}    Create Dictionary    name=    destinationName=    resourceName=    resourceType=entertainment    status=online
+    ...    inventory=all
+    ${response}    SendPost_Recv200    application/x-www-form-urlencoded    ${body}    /resource/procurement/list
+    #获取车辆模板ID
+    ${id}    Get Element Text    ${response}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${entertainmentID}    ${id}
+
+添加元素单日库存价格
+    #获取当前时间
+    ${y}    ${m}    ${d}    Get Time    year,month,day
+    ${time}    Set Variable    ${y}-${m}-${d}
+    Set Suite Variable    ${time}    ${time}
+    #添加住宿元素的库存价格
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "adultCost": "1.00", \ \ \ \ "adultRetail": "1.00", \ \ \ \ "adultSettlement": "1.00", \ \ \ \ "childCost": "1.00", \ \ \ \ "childRetail": "1.00", \ \ \ \ "childSettlement": "1.00", \ \ \ \ "date": "${time}", \ \ \ \ "online": true, \ \ \ \ "op": "edit", \ \ \ \ "quantity": "999", \ \ \ \ "rowId": ${hotelID}, \ \ \ \ "rowTable": "TR_PROCUREMENT", \ \ \ \ "soldQuantity": 0 }    /resource/procurement/stock/update
+    Json Value Should Equal    ${response}    /code    0
+    #添加景点元素的库存价格
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "adultCost": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "date": "${time}", \ \ \ \ "quantity": 999, \ \ \ \ "online": true, \ \ \ \ "rowId": ${scenicID}, \ \ \ \ "op": "edit" }    /resource/procurement/stock/update
+    Json Value Should Equal    ${response}    /code    0
+    #添加餐饮元素的库存价格
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "adultCost": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "date": "${time}", \ \ \ \ "online": true, \ \ \ \ "op": "edit", \ \ \ \ "quantity": "999", \ \ \ \ "rowId": ${cateringID}, \ \ \ \ "rowTable": "TR_PROCUREMENT", \ \ \ \ "soldQuantity": 0 }    /resource/procurement/stock/update
+    Json Value Should Equal    ${response}    /code    0
+    #添加娱乐元素的库存价格
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "adultCost": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "date": "${time}", \ \ \ \ "online": true, \ \ \ \ "op": "edit", \ \ \ \ "quantity": 999, \ \ \ \ "rowId": ${entertainmentID}, \ \ \ \ "rowTable": "TR_PROCUREMENT", \ \ \ \ "soldQuantity": 0 }    /resource/procurement/stock/update
+    Json Value Should Equal    ${response}    /code    0
+
+添加批量库存价格
+    #批量添加住宿资源价格日历
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "online": true, \ \ \ \ "startDate": "${time}", \ \ \ \ "endDate": "${time}", \ \ \ \ "daysOfWeek": [ \ \ \ \ \ \ \ \ 1, \ \ \ \ \ \ \ \ 2, \ \ \ \ \ \ \ \ 3, \ \ \ \ \ \ \ \ 4, \ \ \ \ \ \ \ \ 5, \ \ \ \ \ \ \ \ 6, \ \ \ \ \ \ \ \ 7 \ \ \ \ ], \ \ \ \ "quantity": 999, \ \ \ \ "adultCost": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "rowId": ${hotelID}, \ \ \ \ "op": "edit" }    /resource/procurement/stock/batchAdd
+    Json Value Should Equal    ${response}    /code    0
+    #批量添加景点资源价格日历
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "online": true, \ \ \ \ "startDate": "${time}", \ \ \ \ "endDate": "${time}", \ \ \ \ "daysOfWeek": [ \ \ \ \ \ \ \ \ 1, \ \ \ \ \ \ \ \ 2, \ \ \ \ \ \ \ \ 3, \ \ \ \ \ \ \ \ 4, \ \ \ \ \ \ \ \ 5, \ \ \ \ \ \ \ \ 6, \ \ \ \ \ \ \ \ 7 \ \ \ \ ], \ \ \ \ "quantity": 999, \ \ \ \ "adultCost": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "rowId": ${scenicID}, \ \ \ \ "op": "edit" }    /resource/procurement/stock/batchAdd
+    Json Value Should Equal    ${response}    /code    0
+    #批量添加餐饮资源价格日历
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "online": true, \ \ \ \ "startDate": "${time}", \ \ \ \ "endDate": "${time}", \ \ \ \ "daysOfWeek": [ \ \ \ \ \ \ \ \ 1, \ \ \ \ \ \ \ \ 2, \ \ \ \ \ \ \ \ 3, \ \ \ \ \ \ \ \ 4, \ \ \ \ \ \ \ \ 5, \ \ \ \ \ \ \ \ 6, \ \ \ \ \ \ \ \ 7 \ \ \ \ ], \ \ \ \ "quantity": 999, \ \ \ \ "adultCost": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "rowId": ${cateringID}, \ \ \ \ "op": "edit" }    /resource/procurement/stock/batchAdd
+    Json Value Should Equal    ${response}    /code    0
+    #批量添加娱乐资源价格日历
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "online": true, \ \ \ \ "startDate": "${time}", \ \ \ \ "endDate": "${time}", \ \ \ \ "daysOfWeek": [ \ \ \ \ \ \ \ \ 1, \ \ \ \ \ \ \ \ 2, \ \ \ \ \ \ \ \ 3, \ \ \ \ \ \ \ \ 4, \ \ \ \ \ \ \ \ 5, \ \ \ \ \ \ \ \ 6, \ \ \ \ \ \ \ \ 7 \ \ \ \ ], \ \ \ \ "quantity": 999, \ \ \ \ "adultCost": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "rowId": ${entertainmentID}, \ \ \ \ "op": "edit" }    /resource/procurement/stock/batchAdd
+    Json Value Should Equal    ${response}    /code    0
+
+前十页翻页
+    [Documentation]    描述：验证核心系统资源->元素->前十页翻页接口
+    ...
+    ...    author：李志鹏
+    #前十页翻页
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /resource/procurement/list?index=${i}&size=10
+
+最后十页翻页
+    [Documentation]    描述：验证核心系统资源->元素->后十页翻页接口
+    ...
+    ...    author：李志鹏
+    #后十页翻页
+    : FOR    ${i}    IN RANGE    35    45
+    \    SendGet_Recv200    /resource/procurement/list?index=${i}&size=10

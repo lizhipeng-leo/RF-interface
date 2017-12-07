@@ -1,0 +1,54 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+接驳车资源列表
+    SendGet_Recv200    /app/resource/shuttle_bus/list
+
+添加接驳车资源
+    #查询区域
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    #获取区域的请求体
+    ${areaID}    Get Json Value    ${response}    /data/0/id
+    Set Suite Variable    ${areaID}    ${areaID}
+    ${areaName}    Get Json Value    ${response}    /data/0/name
+    Set Suite Variable    ${areaName}    ${areaName}
+    #发送post请求（查询目的地）
+    ${responsebody}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10,"areaId":${areaID}}    /app/destination/select
+    #获取所属目的地的请求体
+    ${DestinationId}    Get Json Value    ${responsebody}    /data/0/id
+    Set Suite Variable    ${DestinationId}    ${DestinationId}
+    ${DestinalionName}    Get Json Value    ${responsebody}    /data/0/name
+    Set Suite Variable    ${DestinalionName}    ${DestinalionName}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${DestinationId}, \ \ \ \ "appDestinationName": ${DestinalionName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_resource/47c5e1b7633f61b48ee819c069ad5d5e.png", \ \ \ \ "address": "这是接口自动化创建的哦", \ \ \ \ "lat": 30.66565, \ \ \ \ "lon": 104.073565, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": null }    /app/resource/shuttle_bus
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+搜索接驳车资源
+    ${bodydata}    Create Dictionary    name=    appDestinationName=    appDestinationId=    appAreaId=    online=
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/resource/shuttle_bus/list
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_resource" WHERE "name"='${information}';
+    Set Suite Variable    ${ShuttleBusID}    ${id}
+
+查看接驳车资源信息
+    SendGet_Recv200    /app/resource/shuttle_bus/${ShuttleBusID}
+
+更新接驳车资源信息
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${DestinationId}, \ \ \ \ "appDestinationName": ${DestinalionName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_resource/47c5e1b7633f61b48ee819c069ad5d5e.png", \ \ \ \ "address": "这是接口自动化创建的哦", \ \ \ \ "lat": 30.66565, \ \ \ \ "lon": 104.073565, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": ${ShuttleBusID} }    /app/resource/shuttle_bus/${ShuttleBusID}
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+上线接驳车资源
+    ${responseBODY}    SendGet_Recv200    /app/resource/${ShuttleBusID}/status/true
+    Json Value Should Equal    ${responseBODY}    /code    1
+
+下线接驳车资源
+    ${responseBODY}    SendGet_Recv200    /app/resource/${ShuttleBusID}/status/false
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+删除接驳车资源
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/resource/shuttle_bus/delete/${ShuttleBusID}
+    Json Value Should Equal    ${responseBODY}    /code    0

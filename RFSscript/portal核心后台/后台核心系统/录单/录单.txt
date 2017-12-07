@@ -1,0 +1,105 @@
+*** Settings ***
+Resource          MarsCommon.tsv
+Library           Selenium2Library
+
+*** Test Cases ***
+录单列表查看
+    #获取cookie
+    ${JSESSIONID1}    ${JSESSIONID2}    ${jsessionid}    LoginGetTwoCookie    http://uat.resource.simpletour.com    http://uat.product.simpletour.com    http://uat.mars.simpletour.com
+    Set Suite Variable    ${JSESSIONID1}    ${JSESSIONID1}
+    Set Suite Variable    ${JSESSIONID2}    ${JSESSIONID2}
+    Set Global Variable    ${jsessionid}    ${jsessionid}
+    #发送get请求（录单列表查看）
+    SendGet_Recv200    /mars/order/list
+
+添加录单
+    [Documentation]    录单，固定录一个门票单：松潘古城墙门票
+    #获取当前时间
+    ${y}    ${m}    ${d}    Get Time    year,month,day
+    ${time}    Set Variable    ${y}-${m}-${d}
+    #把当前时间设为全局变量
+    Set Suite Variable    ${time}    ${time}
+    #查询渠道信息
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"简途线上自营","index":1,"size":10}    /source/select
+    Json Value Should Equal    ${response}    /code    0
+    Comment    #首先保证此产品是上线状态    #此产品是：松潘古城墙门票
+    Comment    ${response}    NewSendpost    http://uat.product.simpletour.com    ${JSESSIONID2}    application/json;charset=UTF-8    ${EMPTY}
+    ...    /product/product/edit/status/10000126
+    Comment    Json Value Should Equal    ${response}    /code    0
+    #添加此元素资源的库存和价格
+    ${response}    NewSendpost    http://uat.resource.simpletour.com    ${JSESSIONID1}    application/json;charset=UTF-8    { \ \ \ \ "adultCost": "20.00", \ \ \ \ "adultRetail": "30.00", \ \ \ \ "adultSettlement": "30.00", \ \ \ \ "childCost": "20.00", \ \ \ \ "childRetail": "30.00", \ \ \ \ "childSettlement": "30.00", \ \ \ \ "date": "${time}", \ \ \ \ "online": true, \ \ \ \ "op": "edit", \ \ \ \ "quantity": "999", \ \ \ \ "rowId": 2155, \ \ \ \ "rowTable": "TR_PROCUREMENT", \ \ \ \ "soldQuantity": 0 }    /resource/procurement/stock/update
+    Json Value Should Equal    ${response}    /code    0
+    #添加此产品的价格
+    ${response}    NewSendpost    http://uat.product.simpletour.com    ${JSESSIONID2}    application/json;charset=UTF-8    { \ \ \ \ "adultCost": "20", \ \ \ \ "adultSettlement": "30", \ \ \ \ "adultRetail": "30", \ \ \ \ "childCost": "20", \ \ \ \ "childSettlement": "30", \ \ \ \ "childRetail": "30", \ \ \ \ "date": "${time}", \ \ \ \ "rowId": 10000126, \ \ \ \ "op": "edit" }    /product/product/stock/update
+    Json Value Should Equal    ${response}    /code    0
+    #发送post请求（录单）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": null, \ \ \ \ "orderId": null, \ \ \ \ "itemId": null, \ \ \ \ "name": "自动化接口录单", \ \ \ \ "mobile": "13611111111", \ \ \ \ "idType": "TW_TRAVEL_PERMIT", \ \ \ \ "idNo": "12", \ \ \ \ "source": "简途线上自营", \ \ \ \ "sourceOrderId": "", \ \ \ \ "amount": "60.00", \ \ \ \ "day": "${time}", \ \ \ \ "productId": 7136, \ \ \ \ "productName": "松潘古城墙门票", \ \ \ \ "adultPrice": "30.00", \ \ \ \ "childPrice": "30.00", \ \ \ \ "adultQuantity": 2, \ \ \ \ "childQuantity": 0, \ \ \ \ "procurements": [], \ \ \ \ "busNos": [], \ \ \ \ "refund": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "ratio": 100, \ \ \ \ \ \ \ \ \ \ \ \ "timing": 24 \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "remark": "这里填写备注信息", \ \ \ \ "version": null, \ \ \ \ "customers": null }    /mars/order/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索订单
+    #数据库查询录单id
+    ${marsID}    SelectFromPsycopg    SELECT * FROM "public"."mars_order" WHERE createdtime > '${time}' order BY createdtime DESC;
+    #设置订单id为测试套件变量
+    Set Suite Variable    ${marsID}    ${marsID}
+    #发送get请求（搜索订单）
+    SendGet_Recv200    /mars/order/list?id=${marsID}&itemId=&product=&name=&mobile=&bookingStartDate=&bookingEndDate=&travelDate=&source=&sourceName=&sourceOrderId=&bookingStartDateTemp=&bookingEndDateTemp=
+
+查看录单内容
+    #发送get请求（查看录单内容）
+    SendGet_Recv200    /mars/order/edit/${marsID}
+
+更新录单
+    #查询录单
+    Connect To Database    psycopg2    @{DatabaseInfor}[0]    @{DatabaseInfor}[1]    @{DatabaseInfor}[2]    @{DatabaseInfor}[3]    @{DatabaseInfor}[4]
+    ${id}    Query    SELECT * FROM "public"."mars_order" WHERE "id"=${marsID};
+    log    ${id[0][9]}
+    log    ${id[0][12]}
+    Disconnect From Database
+    Set Suite Variable    ${OrderID}    ${id[0][12]}
+    Set Suite Variable    ${ItemID}    ${id[0][9]}
+    #发送post请求（更新录单）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": ${marsID}, \ \ \ \ "orderId": ${OrderID}, \ \ \ \ "itemId": ${ItemID}, \ \ \ \ "name": "自动化接口录单", \ \ \ \ "mobile": "13611111111", \ \ \ \ "idType": "TW_TRAVEL_PERMIT", \ \ \ \ "idNo": "12", \ \ \ \ "source": "简途线上自营", \ \ \ \ "sourceOrderId": "", \ \ \ \ "amount": "60.00", \ \ \ \ "day": "${time}", \ \ \ \ "productId": 0, \ \ \ \ "productName": "松潘古城墙门票", \ \ \ \ "adultPrice": "30.00", \ \ \ \ "childPrice": "30.00", \ \ \ \ "adultQuantity": 2, \ \ \ \ "childQuantity": 0, \ \ \ \ "procurements": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "date": "${time}", \ \ \ \ \ \ \ \ \ \ \ \ "name": "松潘古城墙门票1张", \ \ \ \ \ \ \ \ \ \ \ \ "quantity": 2 \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "busNos": [], \ \ \ \ "refund": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "ratio": 100, \ \ \ \ \ \ \ \ \ \ \ \ "timing": 24 \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "remark": "这里填写备注信息", \ \ \ \ "version": 0, \ \ \ \ "customers": null }    /mars/order/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+录单操作日志
+    #发送get请求（录单操作日志）
+    SendGet_Recv200    /mars/record/view/${marsID}
+
+确认订单
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${marsID}    operation=confirm    orderId=${OrderID}    source=简途线上自营
+    #发送post请求（确认订单）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /mars/order/status
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+申请退款
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${marsID}    operation=refund    orderId=${OrderID}    source=简途线上自营
+    #发送post请求（申请退款）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /mars/order/status
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+前十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /mars/order/list?index=${i}&totalCount=0&size=10
+
+中间十页翻页
+    #发送get请求（中间十页翻页）
+    : FOR    ${i}    IN RANGE    100    111
+    \    SendGet_Recv200    /mars/order/list?index=${i}&totalCount=0&size=10
+
+后十页翻页
+    #发送get请求（最后十页翻页）
+    : FOR    ${i}    IN RANGE    200    210
+    \    SendGet_Recv200    /mars/order/list?index=${i}&totalCount=0&size=10
+
+录单导出
+    #创建body数据
+    ${bodydata}    Create Dictionary    itemId=${ItemID}    travelDate=${time}T00:00:00.000+08:00
+    #发送post请求（录单导出）
+    PostRequests    application/x-www-form-urlencoded    ${bodydata}    /mars/order/export

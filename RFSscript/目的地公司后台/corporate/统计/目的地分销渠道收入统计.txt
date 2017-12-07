@@ -1,0 +1,9 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+目的地分销渠道收入统计页面
+    SendGet_Recv200    /settle/dist_sale_record
+
+搜索分销渠道数据
+    SendGet_Recv200    /settle/dist_sale_record/list?useStartDay=&useEndDay=&refundStartDay=&refundEndDay=&indemnityStartDay=&indemnityEndDay=&orderStartDay=2017-10-31&orderEndDay=2017-10-31&verificationStatusList=NOT_VERIFY&verificationStatusList=VERIFIED&verificationStatusList=LOCKED&itemStatusList=Confirmed&itemStatusList=RefundAll&itemStatusList=Compensated&itemStatusList=CompensateAndRefundAll&canSearchResult=true

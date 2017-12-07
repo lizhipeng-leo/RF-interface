@@ -1,0 +1,56 @@
+*** Settings ***
+Resource          SaleCommon.txt
+Library           Collections
+
+*** Test Cases ***
+退改规则列表
+    #发送get请求（查看退改规则列表）
+    SendGet_Recv200    /refundPolicy/list
+
+添加规则模板
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    成都${randomstring}
+    #发送post请求（添加规则模板）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "deadLine": 0, \ \ \ \ "instruction": "", \ \ \ \ "remark": null, \ \ \ \ "version": 0, \ \ \ \ "id": null, \ \ \ \ "refundRuleForms": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "timing": "24", \ \ \ \ \ \ \ \ \ \ \ \ "ratio": "0", \ \ \ \ \ \ \ \ \ \ \ \ "version": 0 \ \ \ \ \ \ \ \ } \ \ \ \ ] }    /refundPolicy/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索规则
+    #创建body数据
+    ${bodydata}    Create Dictionary    name=${information}
+    #发送post请求（搜索退改规则）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /refundPolicy/list
+    #查询退改规则id
+    ${id}    SelectFromPsycopg    SELECT * FROM sale_refund_policy WHERE "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${refundRuleID}    ${id}
+
+查看退改规则内容
+    #发送get请求（查看退改规则）
+    SendGet_Recv200    /refundPolicy/edit/${refundRuleID}
+
+更新退改规则
+    #发送post请求（更新退改规则）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "deadLine": 0, \ \ \ \ "instruction": "", \ \ \ \ "remark": null, \ \ \ \ "version": 0, \ \ \ \ "id": ${refundRuleID}, \ \ \ \ "refundRuleForms": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "companyId": null, \ \ \ \ \ \ \ \ \ \ \ \ "id": 68, \ \ \ \ \ \ \ \ \ \ \ \ "mode": null, \ \ \ \ \ \ \ \ \ \ \ \ "ratio": 0, \ \ \ \ \ \ \ \ \ \ \ \ "timing": 24, \ \ \ \ \ \ \ \ \ \ \ \ "version": 0 \ \ \ \ \ \ \ \ } \ \ \ \ ] }    /refundPolicy/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索产品
+    #发送post请求（搜索产品）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "index": 1, \ \ \ \ "size": 100, \ \ \ \ "productType": "", \ \ \ \ "saleAppName": "美团", \ \ \ \ "productName": "[活动]成都-九寨沟3日往返车位（新）" }    /agreement/product/select
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+关联产品
+    #发送post请求（关联产品）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "refundId": "${refundRuleID}", \ \ \ \ "agreementProductIds": [ \ \ \ \ \ \ \ \ 17342 \ \ \ \ ] }    /agreement/product/edit/all/refunds
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除退改规则
+    #发送post请求（删除退改规则）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /refundPolicy/delete/${refundRuleID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0

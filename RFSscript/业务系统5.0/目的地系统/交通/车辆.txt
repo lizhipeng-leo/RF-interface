@@ -1,0 +1,59 @@
+*** Settings ***
+Resource          ../common.tsv
+
+*** Test Cases ***
+车辆列表
+    SendGet_Recv200    /transport/bus
+
+添加车辆
+    #查询布局信息
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","pageIndex":0,"pageSize":10}    /transport/layout/select
+    Json Value Should Equal    ${response}    /code    0
+    #添加车辆
+    #创建一个6位的随机字符串
+    ${randomstring}    Generate Random String    6    [LETTERS][NUMBERS]
+    #拼接成随机名称
+    Set Suite Variable    ${information}    自${randomstring}
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"license":"${information}","type":"MINI","status":"online","rowCount":"2","columnCount":"2","capacity":4,"version":0,"seats":[{"type":1,"colNo":"A","rowNo":1},{"type":1,"colNo":"B","rowNo":1},{"type":1,"colNo":"A","rowNo":2},{"type":1,"colNo":"B","rowNo":2}],"id":null,"defaultAssistantSeat":"1A"}    /transport/bus/add
+    Json Value Should Equal    ${response}    /code    0
+
+搜索车辆
+    SendGet_Recv200    /transport/bus/list?license=&capacity=&type=&status=
+    #查询车辆id
+    ${busID}    SelectFromPsycopg    SELECT * FROM "corp"."bus" WHERE license='${information}';
+    Set Suite Variable    ${busID}    ${busID}
+
+查看车辆
+    SendGet_Recv200    /transport/bus/view/${busID}
+
+更新车辆
+    #查询versionid
+    ${versionid}    SelectFromPsycopg    SELECT "version" FROM "corp"."bus" WHERE license='${information}';
+    ${respon}    SendPost_Recv200    application/json;charset=UTF-8    {"license":"${information}","type":"MINI","status":"online","rowCount":2,"columnCount":2,"capacity":4,"version":${versionid},"seats":[{"id":null,"version":null,"type":"1","rowNo":1,"colNo":"A"},{"id":null,"version":null,"type":"1","rowNo":1,"colNo":"B"},{"id":null,"version":null,"type":"1","rowNo":2,"colNo":"A"},{"id":null,"version":null,"type":"1","rowNo":2,"colNo":"B"}],"id":${busID},"defaultAssistantSeat":"1A"}    /transport/bus/edit
+    Json Value Should Equal    ${respon}    /code    0
+
+车辆上线
+    ${postdata}    Create Dictionary    status=online
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    ${postdata}    /transport/bus/changeStatus/${busID}?status=online
+    Json Value Should Equal    ${response}    /code    0
+
+车辆下线
+    ${postdata}    Create Dictionary    status=offline
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    ${postdata}    /transport/bus/changeStatus/${busID}?status=offline
+    Json Value Should Equal    ${response}    /code    0
+
+删除车辆
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    \    /transport/bus/delete/${busID}
+    Json Value Should Equal    ${response}    /code    0
+
+下一页查看
+    SendGet_Recv200    /transport/bus/list?pageIndex=1&pageSize=10&firstError=&errors=
+
+跳转页面
+    SendGet_Recv200    /transport/bus/list?pageIndex=1&pageSize=10&firstError=&errors=
+
+10条/页查看
+    SendGet_Recv200    /transport/bus/list?pageIndex=0&pageSize=10&firstError=&errors=
+
+50条/页查看
+    SendGet_Recv200    /transport/bus/list?pageIndex=0&pageSize=50&firstError=&errors=

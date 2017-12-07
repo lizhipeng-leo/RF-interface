@@ -1,0 +1,59 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+酒店列表
+    SendGet_Recv200    /app/resource/hotel/list
+
+添加酒店资源
+    #查询区域
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    #获取区域的请求体
+    ${areaID}    Get Json Value    ${response}    /data/0/id
+    Set Suite Variable    ${areaID}    ${areaID}
+    ${areaName}    Get Json Value    ${response}    /data/0/name
+    Set Suite Variable    ${areaName}    ${areaName}
+    #发送post请求（查询目的地）
+    ${responsebody}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10,"areaId":${areaID}}    /app/destination/select
+    #获取所属目的地的请求体
+    ${DestinationId}    Get Json Value    ${responsebody}    /data/0/id
+    Set Suite Variable    ${DestinationId}    ${DestinationId}
+    ${DestinalionName}    Get Json Value    ${responsebody}    /data/0/name
+    Set Suite Variable    ${DestinalionName}    ${DestinalionName}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    接口创建${randomstring}
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${DestinationId}, \ \ \ \ "appDestinationName": ${DestinalionName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_resource/81e21cb63755d531d08072d9215ff1a5.png", \ \ \ \ "address": "这是自动化接口创建", \ \ \ \ "lat": 30.662792, \ \ \ \ "lon": 104.072559, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "title": "车票标题", \ \ \ \ \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_resource/ca200e15d339d9e3cc5e34c4472e7b4d.png", \ \ \ \ \ \ \ \ "content": "车票文字" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "title": "行程标题", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "行程文字" \ \ \ \ }, \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": null }    /app/resource/hotel
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+搜索酒店资源
+    #创建bodydata
+    ${bodydata}    Create Dictionary    name=${information}    appDestinationName=    appDestinationId=    appAreaId=    online=
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/resource/hotel/list
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_resource" WHERE "name"='${information}';
+    Set Suite Variable    ${hotelID}    ${id}
+
+查看酒店资源信息
+    SendGet_Recv200    /app/resource/hotel/${hotelID}
+
+更新酒店资源
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${DestinationId}, \ \ \ \ "appDestinationName": ${DestinalionName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_resource/81e21cb63755d531d08072d9215ff1a5.png", \ \ \ \ "address": "这是自动化接口创建", \ \ \ \ "lat": 30.662792, \ \ \ \ "lon": 104.072559, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "content": "车票文字", \ \ \ \ \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_resource/ca200e15d339d9e3cc5e34c4472e7b4d.png", \ \ \ \ \ \ \ \ "title": "车票标题" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "content": "行程文字", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "title": "行程标题" \ \ \ \ }, \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": ${hotelID} }    /app/resource/hotel/${hotelID}
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+上线酒店资源
+    ${responseBODY}    SendGet_Recv200    /app/resource/${hotelID}/status/true
+    Json Value Should Equal    ${responseBODY}    /code    1
+
+下线酒店资源
+    ${responseBODY}    SendGet_Recv200    /app/resource/${hotelID}/status/false
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+删除酒店资源
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/resource/hotel/delete/${hotelID}
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+下一页翻页
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/resource/hotel/list?index=${i}&size=10&type=hotel

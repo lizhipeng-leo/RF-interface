@@ -1,0 +1,24 @@
+*** Settings ***
+Force Tags        FirstQuarter
+Resource          ResourceCommon.tsv
+Library           DateTime
+
+*** Test Cases ***
+推荐产品
+    Comment    #取得运行时的系统日期，只取年月日
+    Comment    ${current_date}    Get Current Date
+    Comment    Convert Date    ${current_date}
+    Comment    ${date}=
+    Comment    Should Be Equal \ As Integers    ${date.year}    2017
+    Comment    ${month}=    ${date.month}
+    Comment    ${day}=    ${date.day}
+    #只检查不报错
+    SendPost_Recv200    application/json;charset=UTF-8    {"pageIndex":0,"pageSize":10,"type":"preferential_product","day":"2017-09-12","start":"2017-09-09","end":"2017-09-15","id":"","name":"成都-"}    /resource/stock/list
+
+资源
+    #只检查不报错
+    SendPost_Recv200    application/json;charset=UTF-8    {"pageIndex":0,"pageSize":10,"type":"resource","day":"2017-09-12","start":"2017-09-09","end":"2017-09-15","id":"","name":"成都"}    /resource/stock/list
+
+区段
+    #只检查不报错
+    SendPost_Recv200    application/json;charset=UTF-8    {"pageIndex":0,"pageSize":10,"type":"section","day":"2017-09-12","start":"2017-09-09","end":"2017-09-15","id":"","name":"成都"}    /resource/stock/list

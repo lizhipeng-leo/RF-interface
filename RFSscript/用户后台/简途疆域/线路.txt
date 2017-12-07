@@ -1,0 +1,115 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+线路列表
+    SendGet_Recv200    /app/line/list
+
+添加线路
+    #查询区域
+    ${areaResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    ${areaaddress}    Get Json Value    ${areaResponse}    /data/0
+    log    ${areaaddress}
+    ${decreatedTime}    Get Json Value    ${areaResponse}    /data/0/createdTime
+    ${dedel}    Get Json Value    ${areaResponse}    /data/0/del
+    ${dedescription}    Get Json Value    ${areaResponse}    /data/0/description
+    ${deid}    Get Json Value    ${areaResponse}    /data/0/id
+    ${deimage}    Get Json Value    ${areaResponse}    /data/0/image
+    ${dename}    Get Json Value    ${areaResponse}    /data/0/name
+    ${depacreatedTime}    Get Json Value    ${areaResponse}    /data/0/parent/createdTime
+    ${depadel}    Get Json Value    ${areaResponse}    /data/0/parent/del
+    ${depadescription}    Get Json Value    ${areaResponse}    /data/0/parent/description
+    ${depaid}    Get Json Value    ${areaResponse}    /data/0/parent/id
+    ${depaimage}    Get Json Value    ${areaResponse}    /data/0/parent/image
+    ${depaname}    Get Json Value    ${areaResponse}    /data/0/parent/name
+    ${depastatus}    Get Json Value    ${areaResponse}    /data/0/parent/status
+    ${depatype}    Get Json Value    ${areaResponse}    /data/0/parent/type
+    ${depaupdateTime}    Get Json Value    ${areaResponse}    /data/0/parent/updateTime
+    ${depaversion}    Get Json Value    ${areaResponse}    /data/0/parent/version
+    ${depaweight}    Get Json Value    ${areaResponse}    /data/0/parent/weight
+    ${destatus1}    Get Json Value    ${areaResponse}    /data/0/status
+    ${deupdateTime1}    Get Json Value    ${areaResponse}    /data/0/updateTime
+    ${deversion1}    Get Json Value    ${areaResponse}    /data/0/version
+    ${deweight1}    Get Json Value    ${areaResponse}    /data/0/weight
+    ${detype1}    Get Json Value    ${areaResponse}    /data/0/type
+    #查询线路标签
+    ${lineResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10,"type":"LINE"}    /app/tag/select
+    #取出线路标签id
+    ${lineName}    Get Json Value    ${lineResponse}    /data/0/name
+    ${lineID}    Get Json Value    ${lineResponse}    /data/0/id
+    #查询目的地线路
+    ${destResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/destination/select
+    ${areaaddress}    Get Json Value    ${destResponse}    /data/0/address
+    ${areacreatedTime}    Get Json Value    ${destResponse}    /data/0/createdTime
+    ${areadel}    Get Json Value    ${destResponse}    /data/0/del
+    ${areadescription}    Get Json Value    ${destResponse}    /data/0/area/description
+    ${areaID1}    Get Json Value    ${destResponse}    /data/0/area/id
+    ${areaimage1}    Get Json Value    ${destResponse}    /data/0/area/image
+    ${areaname}    Get Json Value    ${destResponse}    /data/0/area/name
+    ${areacreatedTime1}    Get Json Value    ${destResponse}    /data/0/area/parent/createdTime
+    ${areadel1}    Get Json Value    ${destResponse}    /data/0/area/parent/del
+    ${areadescription1}    Get Json Value    ${destResponse}    /data/0/area/parent/description
+    ${areaid2}    Get Json Value    ${destResponse}    /data/0/area/parent/id
+    ${areaimage2}    Get Json Value    ${destResponse}    /data/0/area/parent/image
+    ${areaname1}    Get Json Value    ${destResponse}    /data/0/area/parent/name
+    ${areastatus}    Get Json Value    ${destResponse}    /data/0/area/parent/status
+    ${areatype}    Get Json Value    ${destResponse}    /data/0/area/parent/type
+    ${areaupdateTime}    Get Json Value    ${destResponse}    /data/0/area/parent/updateTime
+    ${areaversion}    Get Json Value    ${destResponse}    /data/0/area/parent/version
+    ${areaweight}    Get Json Value    ${destResponse}    /data/0/area/parent/weight
+    ${areastatus1}    Get Json Value    ${destResponse}    /data/0/area/status
+    ${areatype1}    Get Json Value    ${destResponse}    /data/0/area/type
+    ${areaupdateTime1}    Get Json Value    ${destResponse}    /data/0/area/updateTime
+    ${areaversion1}    Get Json Value    ${destResponse}    /data/0/area/version
+    ${areaweight1}    Get Json Value    ${destResponse}    /data/0/area/weight
+    ${areacreatedTime2}    Get Json Value    ${destResponse}    /data/0/area/createdTime
+    ${areadefaultLocation}    Get Json Value    ${destResponse}    /data/0/defaultLocation
+    ${areadel2}    Get Json Value    ${destResponse}    /data/0/area/del
+    ${areadescription2}    Get Json Value    ${destResponse}    /data/0/description
+    ${areafirstLetter}    Get Json Value    ${destResponse}    /data/0/firstLetter
+    ${areahandbook}    Get Json Value    ${destResponse}    /data/0/handbook
+    ${areaid3}    Get Json Value    ${destResponse}    /data/0/id
+    ${areaisRecommend}    Get Json Value    ${destResponse}    /data/0/isRecommend
+    ${arealat}    Get Json Value    ${destResponse}    /data/0/lat
+    ${arealon}    Get Json Value    ${destResponse}    /data/0/lon
+    ${areaname4}    Get Json Value    ${destResponse}    /data/0/name
+    ${areaonline}    Get Json Value    ${destResponse}    /data/0/online
+    ${areaupdateTime}    Get Json Value    ${destResponse}    /data/0/updateTime
+    ${areaversion3}    Get Json Value    ${destResponse}    /data/0/version
+    ${areaweight2}    Get Json Value    ${destResponse}    /data/0/weight
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    接口创建${randomstring}
+    #添加线路
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "description": "线路介绍", \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appDestinations": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "address": ${areaaddress}, \ \ \ \ \ \ \ \ \ \ \ \ "area": { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${areacreatedTime2}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "del": ${areadel}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "description": ${areadescription}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "id": ${areaID1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "image": ${areaimage1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "name": ${areaname}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "parent": { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${areacreatedTime1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "del": ${areadel1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "description": ${areadescription1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "id": ${areaid2}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "image": ${areaimage2}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "name": ${areaname1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "status": ${areastatus}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "type": ${areatype}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${areaupdateTime}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "version": ${areaversion}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${areaweight} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "status": ${areastatus1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "type": ${areatype1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${areaupdateTime1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "version": ${areaversion1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${areaweight1} \ \ \ \ \ \ \ \ \ \ \ \ }, \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${areacreatedTime}, \ \ \ \ \ \ \ \ \ \ \ \ "defaultLocation": ${areadefaultLocation}, \ \ \ \ \ \ \ \ \ \ \ \ "del": ${areadel2}, \ \ \ \ \ \ \ \ \ \ \ \ "description": ${areadescription2}, \ \ \ \ \ \ \ \ \ \ \ \ "firstLetter": ${areafirstLetter}, \ \ \ \ \ \ \ \ \ \ \ \ "handbook": ${areahandbook}, \ \ \ \ \ \ \ \ \ \ \ \ "id": ${areaid3}, \ \ \ \ \ \ \ \ \ \ \ \ "isRecommend": ${areaisRecommend}, \ \ \ \ \ \ \ \ \ \ \ \ "lat": ${arealat}, \ \ \ \ \ \ \ \ \ \ \ \ "lon": ${arealon}, \ \ \ \ \ \ \ \ \ \ \ \ "name": ${areaname4}, \ \ \ \ \ \ \ \ \ \ \ \ "online": ${areaonline}, \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${areaupdateTime}, \ \ \ \ \ \ \ \ \ \ \ \ "version": ${areaversion3}, \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${areaweight2} \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "appAreas": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${decreatedTime}, \ \ \ \ \ \ \ \ \ \ \ \ "del": ${dedel}, \ \ \ \ \ \ \ \ \ \ \ \ "description": ${dedescription}, \ \ \ \ \ \ \ \ \ \ \ \ "id": ${deid}, \ \ \ \ \ \ \ \ \ \ \ \ "image": ${deimage}, \ \ \ \ \ \ \ \ \ \ \ \ "name": ${dename}, \ \ \ \ \ \ \ \ \ \ \ \ "parent": { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${depacreatedTime}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "del": ${depadel}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "description": ${depadescription}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "id": ${depaid}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "image": ${depaimage}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "name": ${depaname}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "status": ${depastatus}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "type": ${depatype}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${depaupdateTime}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "version": ${depaversion}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${depaweight} \ \ \ \ \ \ \ \ \ \ \ \ }, \ \ \ \ \ \ \ \ \ \ \ \ "status": ${destatus1}, \ \ \ \ \ \ \ \ \ \ \ \ "type": ${detype1}, \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${deupdateTime1}, \ \ \ \ \ \ \ \ \ \ \ \ "version": ${deversion1}, \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${deweight1} \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "image": "", \ \ \ \ "images": [ \ \ \ \ \ \ \ \ "https://images.simpletour.com/simpletour/images/app_line/62d262d00f9aa3c944e62e57a01061ed.png" \ \ \ \ ], \ \ \ \ "weight": "12", \ \ \ \ "passLineSection": "途径地不需要修改", \ \ \ \ "lineSections": [], \ \ \ \ "online": false, \ \ \ \ "version": 0, \ \ \ \ "lineTagName": ${lineName}, \ \ \ \ "lineTagId": ${lineID}, \ \ \ \ "enName": "zidonghuajiekouchuagnjian", \ \ \ \ "isRecommend": false, \ \ \ \ "sections": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "id": null, \ \ \ \ \ \ \ \ \ \ \ \ "startDestId": ${areaid3}, \ \ \ \ \ \ \ \ \ \ \ \ "startDestName": ${areaname4}, \ \ \ \ \ \ \ \ \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_line/dba493e44a60235690a03d3398b9bbb2.png", \ \ \ \ \ \ \ \ \ \ \ \ "dests": [ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "address": ${areaaddress}, \ \ \ \ \ \ \ \ \ \ \ \ "area": { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${areacreatedTime2}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "del": ${areadel}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "description": ${areadescription}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "id": ${areaID1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "image": ${areaimage1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "name": ${areaname}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "parent": { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${areacreatedTime1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "del": ${areadel1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "description": ${areadescription1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "id": ${areaid2}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "image": ${areaimage2}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "name": ${areaname1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "status": ${areastatus}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "type": ${areatype}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${areaupdateTime}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "version": ${areaversion}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${areaweight} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "status": ${areastatus1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "type": ${areatype1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${areaupdateTime1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "version": ${areaversion1}, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${areaweight1} \ \ \ \ \ \ \ \ \ \ \ \ }, \ \ \ \ \ \ \ \ \ \ \ \ "createdTime": ${areacreatedTime}, \ \ \ \ \ \ \ \ \ \ \ \ "defaultLocation": ${areadefaultLocation}, \ \ \ \ \ \ \ \ \ \ \ \ "del": ${areadel2}, \ \ \ \ \ \ \ \ \ \ \ \ "description": ${areadescription2}, \ \ \ \ \ \ \ \ \ \ \ \ "firstLetter": ${areafirstLetter}, \ \ \ \ \ \ \ \ \ \ \ \ "handbook": ${areahandbook}, \ \ \ \ \ \ \ \ \ \ \ \ "id": ${areaid3}, \ \ \ \ \ \ \ \ \ \ \ \ "isRecommend": ${areaisRecommend}, \ \ \ \ \ \ \ \ \ \ \ \ "lat": ${arealat}, \ \ \ \ \ \ \ \ \ \ \ \ "lon": ${arealon}, \ \ \ \ \ \ \ \ \ \ \ \ "name": ${areaname4}, \ \ \ \ \ \ \ \ \ \ \ \ "online": ${areaonline}, \ \ \ \ \ \ \ \ \ \ \ \ "updateTime": ${areaupdateTime}, \ \ \ \ \ \ \ \ \ \ \ \ "version": ${areaversion3}, \ \ \ \ \ \ \ \ \ \ \ \ "weight": ${areaweight2} \ \ \ \ \ \ \ \ \ \ \ \ } \ \ \ \ \ \ \ \ \ \ \ \ ], \ \ \ \ \ \ \ \ \ \ \ \ "weight": "12" \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "id": null }    /app/line
+    Json Value Should Equal    ${response}    /code    0
+
+搜索线路
+    ${bodydata}    Create Dictionary    name=${information}    areaId=    online=
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/line/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${lineID2}    ${id}
+
+查看线路
+    SendGet_Recv200    /app/line/${lineID2}
+
+更新线路信息
+    Comment    \    SendPost_Recv200    application/json;charset=UTF-8    \    /app/line/${lineID2}
+
+线路上线
+    ${bodydata}    Create Dictionary    status=true
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /app/line/status/${lineID2}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+线路下线
+    ${bodydata}    Create Dictionary    status=false
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /app/line/status/${lineID2}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除线路
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/line/delete/${lineID2}
+    Json Value Should Equal    ${responsedata}    /code    0

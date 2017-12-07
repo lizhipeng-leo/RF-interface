@@ -1,0 +1,6 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+助理销售记录页面
+    SendGet_Recv200    /settle/assistantsale

@@ -1,0 +1,45 @@
+*** Settings ***
+Resource          ../common.tsv
+
+*** Test Cases ***
+布局列表
+    SendGet_Recv200    /transport/layout
+
+添加布局
+    #创建一个6位的随机字符串
+    ${randomstring}    Generate Random String    6    [LETTERS][NUMBERS]
+    #拼接成随机名称
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","type":"MINI","row":"2","col":"2","capacity":4,"seatForms":[{"type":1,"colNo":"A","rowNo":1},{"type":1,"colNo":"B","rowNo":1},{"type":1,"colNo":"A","rowNo":2},{"type":1,"colNo":"B","rowNo":2}],"id":null,"version":null}    /transport/layout/add
+    Json Value Should Equal    ${response}    /code    0
+
+搜索布局
+    SendGet_Recv200    /transport/layout/list?id=&name=&type=
+    ${layoutid}    SelectFromPsycopg    SELECT * FROM "corp"."bus_layout" WHERE "name"='${information}';
+    Set Suite Variable    ${layoutid}    ${layoutid}
+
+查看布局
+    SendGet_Recv200    /transport/layout/view/${layoutid}
+
+更新布局
+    #查询version版本号
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "corp"."bus_layout" WHERE "id"=${layoutid};
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","type":"MINI","row":2,"col":2,"capacity":4,"seatForms":[{"id":520,"version":null,"type":"1","rowNo":1,"colNo":"A"},{"id":521,"version":null,"type":"1","rowNo":1,"colNo":"B"},{"id":522,"version":null,"type":"1","rowNo":2,"colNo":"A"},{"id":523,"version":null,"type":"1","rowNo":2,"colNo":"B"}],"id":${layoutid},"version":${version}}    /transport/layout/update
+    Json Value Should Equal    ${response}    /code    0
+
+删除布局
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "corp"."bus_layout" WHERE "id"=${layoutid};
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","type":"MINI","row":2,"col":2,"capacity":4,"seatForms":[{"id":520,"version":null,"type":"1","rowNo":1,"colNo":"A"},{"id":521,"version":null,"type":"1","rowNo":1,"colNo":"B"},{"id":522,"version":null,"type":"1","rowNo":2,"colNo":"A"},{"id":523,"version":null,"type":"1","rowNo":2,"colNo":"B"}],"id":${layoutid},"version":${version}}    /transport/layout/delete
+    Json Value Should Equal    ${response}    /code    0
+
+下一页查看
+    SendGet_Recv200    /transport/layout/list?pageIndex=1&pageSize=10
+
+跳转页面
+    SendGet_Recv200    /transport/layout/list?pageIndex=1&pageSize=10
+
+10条/页查看
+    SendGet_Recv200    /transport/layout/list?pageIndex=0&pageSize=10
+
+50条/页查看
+    SendGet_Recv200    /transport/layout/list?pageIndex=0&pageSize=50

@@ -1,0 +1,35 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+线路标签列表
+    SendGet_Recv200    /app/tag/list?type=LINE
+
+添加线路标签
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    4    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    接口${randomstring}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"type":"LINE","name":"${information}","weight":"1","version":null,"id":null}    /app/tag/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索线路标签
+    #创建bodydata
+    ${bodydata}    Create Dictionary    name=${information}    type=LINE
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/tag/list
+    #获取公司ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${XtagID}    ${id}
+
+查看线路标签信息
+    SendGet_Recv200    /app/tag/${XtagID}
+
+更新线路标签
+    #查询versionID
+    ${versionID}    SelectFromPsycopg    SELECT "version" FROM "public"."app_tag" WHERE "name"='${information}';
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"type":"LINE","name":"${information}","weight":1,"version":${versionID},"id":${XtagID}}    /app/tag/${XtagID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0

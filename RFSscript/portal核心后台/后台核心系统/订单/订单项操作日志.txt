@@ -1,0 +1,30 @@
+*** Settings ***
+Resource          OrderCommon.tsv
+
+*** Test Cases ***
+订单项操作日志
+    #发送get请求（订单项操作日志列表查看）
+    SendGet_Recv200    /order/itemRecord/list
+
+搜索订单项操作日志
+    #发送get请求（搜索订单项操作日志）
+    SendGet_Recv200    /order/itemRecord/list?itemId=&saleAppName=&saleApp=&operator=&startDate=&endDate=&opeStartTime=&opeEndTime=
+
+导出操作日志
+    #发送get请求（导出操作日志）
+    GetRequests    /order/itemRecord/export?saleAppName=qunar汽车票&opeStartTime=&opeEndTime=
+
+前十页翻页
+    #发送get请求（前十页翻页）
+    :FOR    ${i}    in range    1    11
+    \    SendGet_Recv200    /order/itemRecord/list?index=${i}&size=10&totalCount=0
+
+中间十页翻页
+    #发送get请求（翻页）
+    :FOR    ${i}    in range    60    70
+    \    SendGet_Recv200    /order/itemRecord/list?index=${i}&size=10&totalCount=0
+
+最后十页翻页
+    #发送get请求（翻页）
+    :FOR    ${i}    in range    118    128
+    \    SendGet_Recv200    /order/itemRecord/list?index=${i}&size=10&totalCount=0

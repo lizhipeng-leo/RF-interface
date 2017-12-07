@@ -1,0 +1,74 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+供应协议列表
+    SendGet_Recv200    /osp/allOspSupplyAgreement
+
+添加供应商协议
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #测试条件变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #获取当前时间，精确到天
+    ${time}    Get Time
+    #取出年和月
+    ${day}    Split String    ${time}    ${SPACE}
+    log    ${day[0]}
+    Set Suite Variable    ${day[0]}    ${day[0]}
+    #查询启用的供应商
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","pageIndex":0,"pageSize":10,"status":"ENABLED"}    /osp/osp/select
+    #获取供应商id
+    ${ospID}    Get Json Value    ${response}    /data/0/id
+    Set Suite Variable    ${ospID}    ${ospID}
+    #获取供应商name
+    ${ospName}    Get Json Value    ${response}    /data/0/name
+    Set Suite Variable    ${ospName}    ${ospName}
+    #添加供应协议
+    ${response1}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"effectForm":"${day[0]}","effectUpto":"${day[0]}","paymentType":"ALIPAY","payeeName":"姓名","payeeBankInfo":null,"payeeAccount":"账号","settlementOffset":"1","timeout":"20","version":0,"id":null,"ospId":${ospID},"ospName":""}    /osp/allOspSupplyAgreement/add
+    Json Value Should Equal    ${response1}    /code    0
+
+搜索供应商协议
+    SendGet_Recv200    /osp/allOspSupplyAgreement/list?id=&ospName=&ospId=&name=${information}&effectFrom=&effectUpto=&status=
+
+查看供应商协议信息
+    #查询协议id
+    ${ospAgreeID}    SelectFromPsycopg    SELECT * FROM "corp"."supply_agreement" WHERE osp_id=${ospID} AND "name"='${information}';
+    Set Suite Variable    ${ospAgreeID}    ${ospAgreeID}
+    #发送get请求
+    SendGet_Recv200    /osp/allOspSupplyAgreement/view/${ospAgreeID}
+
+编辑供应商协议信息
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"effectForm":"${day[0]}","effectUpto":"${day[0]}","paymentType":"ALIPAY","payeeName":"姓名","payeeBankInfo":null,"payeeAccount":"账号","settlementOffset":1,"timeout":20,"version":0,"id":${ospAgreeID},"ospId":${ospID},"ospName":${ospName}}    /osp/allOspSupplyAgreement/edit
+    Json Value Should Equal    ${response}    /code    0
+
+确认终止供应商协议
+    #确认操作
+    ${response}    SendGet_Recv200    /osp/allOspSupplyAgreement/confirm/${ospAgreeID}
+    Json Value Should Equal    ${response}    /data    "已确认"
+    #检验协议状态
+    ${status}    SelectFromPsycopg    SELECT status FROM "corp"."supply_agreement" WHERE "osp_id"='${ospID}' \ AND "name"='${information}';
+    Should Be Equal    ${status}    APPROVED
+    #终止操作
+    ${response}    SendGet_Recv200    /osp/allOspSupplyAgreement/terminated/${ospAgreeID}
+    Json Value Should Equal    ${response}    /data    "终止"
+    #检验协议状态
+    ${status}    SelectFromPsycopg    SELECT status FROM "corp"."supply_agreement" WHERE "osp_id"='${ospID}' \ AND "name"='${information}';
+    Should Be Equal    ${status}    TERMINATED
+
+废弃供应商协议
+    #首先另外创建一个协议
+    #添加供应协议
+    ${response1}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}s","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"effectForm":"${day[0]}","effectUpto":"${day[0]}","paymentType":"ALIPAY","payeeName":"姓名","payeeBankInfo":null,"payeeAccount":"账号","settlementOffset":"1","timeout":"20","version":0,"id":null,"ospId":${ospID},"ospName":""}    /osp/allOspSupplyAgreement/add
+    Json Value Should Equal    ${response1}    /code    0
+    #查看供应协议id
+    ${newospAgreeID}    SelectFromPsycopg    SELECT * FROM "corp"."supply_agreement" WHERE osp_id=${ospID} AND "name"='${information}s';
+    Set Suite Variable    ${newospAgreeID}
+    #废弃操作
+    ${response1}    SendGet_Recv200    /osp/agreement/suspended/${newospAgreeID}
+    Json Value Should Equal    ${response1}    /code    0
+    Json Value Should Equal    ${response1}    /data    "废弃"
+    #校验此时协议状态（应该是废弃）
+    ${status1}    SelectFromPsycopg    SELECT status FROM "corp"."supply_agreement" WHERE osp_id=${ospID} AND "name"='${information}s';
+    Should Be Equal    ${status1}    SUSPENDED

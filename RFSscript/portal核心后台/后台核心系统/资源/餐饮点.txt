@@ -1,0 +1,112 @@
+*** Settings ***
+Resource          ResourceCommon.tsv
+
+*** Test Cases ***
+餐饮点列表查看
+    [Documentation]    描述：验证核心系统资源->餐饮点->餐饮点列表查看接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（餐饮点列表）
+    SendGet_Recv200    /resource/catering/list
+
+添加餐饮点
+    [Documentation]    描述：验证核心系统资源->餐饮点->添加餐饮点接口
+    ...
+    ...    author：李志鹏
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    成都${randomstring}
+    #查询目的地
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /resource/destination/select
+    ${destinationID}    Get Json Value    ${response}    /data/0/id
+    ${destinationName}    Get Json Value    ${response}    /data/0/name
+    #发送post请求（添加餐饮点）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "destinationId": ${destinationID}, \ \ \ \ "destinationName": ${destinationName}, \ \ \ \ "name": "${information}", \ \ \ \ "type": "hotel", \ \ \ \ "remark": "", \ \ \ \ "address": "天府广场", \ \ \ \ "longitude": 0, \ \ \ \ "latitude": 0, \ \ \ \ "version": 0, \ \ \ \ "id": "" }    /resource/catering/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+餐饮点搜索
+    [Documentation]    描述：验证核心系统资源->餐饮点->餐饮点搜索接口
+    ...
+    ...    author：李志鹏
+    #创建body数据
+    ${bodydata}    Create Dictionary    type=    name=${information}    destinationName=
+    #发送post请求（餐饮点搜索）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /resource/catering/list
+    #获取车辆模板ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${cateringID}    ${id}
+
+查看餐饮点信息
+    [Documentation]    描述：验证核心系统资源->餐饮点->查看餐饮点信息接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（查看餐饮点信息）
+    SendGet_Recv200    /resource/catering/edit/${cateringID}
+
+更新餐饮点信息
+    [Documentation]    描述：验证核心系统资源->餐饮点->更新餐饮点信息接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（更新餐饮点信息）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "destinationId": 510100120, \ \ \ \ "destinationName": "成都市", \ \ \ \ "name": "${information}", \ \ \ \ "type": "hotel", \ \ \ \ "remark": "", \ \ \ \ "address": "天府广场", \ \ \ \ "longitude": 0, \ \ \ \ "latitude": 0, \ \ \ \ "version": 0, \ \ \ \ "id": ${cateringID} }    /resource/catering/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页翻页
+    [Documentation]    描述：验证核心系统资源->餐饮点->下一页翻页接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（翻页）
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /resource/catering/list?index=${i}&size=10
+
+编辑餐饮点添加到元素
+    [Documentation]    描述：验证核心系统资源->餐饮点->编辑餐饮点添加到元素接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（编辑餐饮点添加到元素）
+    SendGet_Recv200    /resource/procurement/catering/${cateringID}
+
+餐饮点添加到元素
+    [Documentation]    描述：验证核心系统资源->餐饮点->餐饮点添加到元素接口
+    ...
+    ...    author：李志鹏
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": null, \ \ \ \ "resourceId": ${cateringID}, \ \ \ \ "resourceName": "${information}", \ \ \ \ "resourceType": "catering", \ \ \ \ "procurementName": "${information}", \ \ \ \ "ospName": "简途", \ \ \ \ "ospId": 10, \ \ \ \ "destinationId": 510100120, \ \ \ \ "remark": null, \ \ \ \ "online": "online", \ \ \ \ "inventory": "occupy", \ \ \ \ "companyId": null, \ \ \ \ "version": null }    /resource/procurement/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+查询餐饮点元素
+    [Documentation]    描述：验证核心系统资源->餐饮点->查询餐饮点元素接口
+    ...
+    ...    author：李志鹏
+    #创建body数据
+    ${bodydata}    Create Dictionary    name=${information}    destinationName=    resourceName=    resourceType=all    status=all
+    ...    inventory=all
+    #发送post请求（搜索元素）
+    ${responsedata}    SendPost_Recv200    text/html;charset=UTF-8    ${bodydata}    /resource/procurement/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把ID设置为测试套件变量
+    Set Suite Variable    ${procurementID}    ${id}
+
+删除餐饮点元素
+    [Documentation]    描述：验证核心系统资源->餐饮点->删除从餐饮点元素接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（删除住宿点元素）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /resource/procurement/delete/${procurementID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除餐饮点
+    [Documentation]    描述：验证核心系统资源->餐饮点->删除餐饮点接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（删除餐饮点）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /resource/catering/delete/${cateringID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0

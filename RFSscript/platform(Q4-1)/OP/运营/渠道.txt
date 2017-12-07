@@ -1,0 +1,69 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+渠道列表
+    SendGet_Recv200    /source
+
+添加渠道
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appId": "36", \ \ \ \ "appName": null, \ \ \ \ "reserveTime": 1, \ \ \ \ "agentName": "姓名", \ \ \ \ "agentMobile": 13666666666, \ \ \ \ "accountingClass": "REALTIME", \ \ \ \ "accountingCategory": "MONTH_A", \ \ \ \ "accountingBase": "BOOKING", \ \ \ \ "accountingPeriod": 0, \ \ \ \ "clearingPeriod": "", \ \ \ \ "pricingRules": { \ \ \ \ \ \ \ \ "settlement": [], \ \ \ \ \ \ \ \ "retail": [] \ \ \ \ }, \ \ \ \ "id": null, \ \ \ \ "version": null }    /source/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索渠道
+    ${responsedata}    SendGet_Recv200    /source/list?name=${randomstring}&saleApp=&agentName=
+    #获取渠道ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "platform"."source" WHERE "name"='${information}';
+    Set Suite Variable    ${sourceID}    ${id}
+
+编辑渠道
+    SendGet_Recv200    /source/detail/${sourceID}
+
+更新渠道
+    #查询versionID
+    ${versionID}    SelectFromPsycopg    SELECT "version" FROM "platform"."source" WHERE "name"='${information}';
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appId": 36, \ \ \ \ "appName": "销售端三十", \ \ \ \ "reserveTime": 1, \ \ \ \ "agentName": "姓名", \ \ \ \ "agentMobile": "13666666666", \ \ \ \ "accountingClass": "REALTIME", \ \ \ \ "accountingCategory": "MONTH_A", \ \ \ \ "accountingBase": "BOOKING", \ \ \ \ "accountingPeriod": 0, \ \ \ \ "clearingPeriod": "", \ \ \ \ "pricingRules": { \ \ \ \ \ \ \ \ "settlement": [], \ \ \ \ \ \ \ \ "retail": [] \ \ \ \ }, \ \ \ \ "id": ${sourceID}, \ \ \ \ "version": ${versionID} }    /source/update
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+价格规则查看
+    SendGet_Recv200    /source/pricingRules/${sourceID}
+
+价格规则添加
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "settlement": [], \ \ \ \ "retail": [], \ \ \ \ "sourceName": "${information}", \ \ \ \ "id": ${sourceID} }    /source/pricingRules/update
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+退款规则查看
+    SendGet_Recv200    /source/refundPolicy/${sourceID}
+
+退款规则添加
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "rules": [], \ \ \ \ "textForm": [], \ \ \ \ "sourceName": "${information}", \ \ \ \ "id": ${sourceID} }    /source/refundPolicy/update
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除退款规则
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "rules": [], \ \ \ \ "textForm": [], \ \ \ \ "sourceName": "${information}", \ \ \ \ "id": ${sourceID} }    /source/refundPolicy/delete
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+十条数据分页查看
+    SendGet_Recv200    /source/list?pageIndex=0&pageSize=10
+
+五十条数据分页查看
+    SendGet_Recv200    /source/list?pageIndex=0&pageSize=50
+
+下一页翻页查看
+    #十页数据下的下一页查看
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /source/list?pageIndex=${i}&pageSize=10
+    #五十条数据分页下的下一页查看
+    :FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /source/list?pageIndex=${i}&pageSize=50

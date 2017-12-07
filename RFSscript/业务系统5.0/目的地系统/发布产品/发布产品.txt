@@ -1,0 +1,81 @@
+*** Settings ***
+Resource          ../common.tsv
+
+*** Test Cases ***
+发布产品列表
+    SendGet_Recv200    /product/product
+
+添加发布产品
+    #创建一个6位的随机字符串
+    ${randomstring}    Generate Random String    6    [LETTERS][NUMBERS]
+    #拼接成随机名称
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #查询目的地
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","pageIndex":1,"pageSize":10}    /common/dest/select
+    ${destination}    Get Json Value    ${resp}    /data/0/name
+    ${destinationId}    Get Json Value    ${resp}    /data/0/id
+    Set Suite Variable    ${destination}    ${destination}
+    Set Suite Variable    ${destinationId}    ${destinationId}
+    #搜索资源
+    ${ResourceRespon}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","ospName":"","type":"","status":true,"pageIndex":0,"pageSize":10}    /product/product/resource/select
+    ${entityId}    Get Json Value    ${ResourceRespon}    /data/0/id
+    ${entityName}    Get Json Value    ${ResourceRespon}    /data/0/name
+    ${showName}    Get Json Value    ${ResourceRespon}    /data/0/showName
+    ${entityType}    Get Json Value    ${ResourceRespon}    /data/0/type
+    ${typeRemark}    Get Json Value    ${ResourceRespon}    /data/0/typeRemark
+    ${capacity}    Get Json Value    ${ResourceRespon}    /data/0/capacity
+    ${extraInfo}    Get Json Value    ${ResourceRespon}    /data/0/extraInfo
+    ${highlight}    Get Json Value    ${ResourceRespon}    /data/0/highlightList
+    ${usage}    Get Json Value    ${ResourceRespon}    /data/0/usageList
+    ${include}    Get Json Value    ${ResourceRespon}    /data/0/includeList
+    ${notice}    Get Json Value    ${ResourceRespon}    /data/0/noticeList
+    ${idTypes}    Get Json Value    ${ResourceRespon}    /data/0/idTypes
+    ${twiceConfirm}    Get Json Value    ${ResourceRespon}    /data/0/twiceConfirm
+    Set Suite Variable    ${entityId}    ${entityId}
+    Set Suite Variable    ${entityName}    ${entityName}
+    Set Suite Variable    ${showName}    ${showName}
+    Set Suite Variable    ${entityType}    ${entityType}
+    Set Suite Variable    ${typeRemark}    ${typeRemark}
+    Set Suite Variable    ${capacity}    ${capacity}
+    Set Suite Variable    ${extraInfo}    ${extraInfo}
+    Set Suite Variable    ${highlight}    ${highlight}
+    Set Suite Variable    ${usage}    ${usage}
+    Set Suite Variable    ${include}    ${include}
+    Set Suite Variable    ${notice}    ${notice}
+    Set Suite Variable    ${idTypes}    ${idTypes}
+    Set Suite Variable    ${twiceConfirm}    ${twiceConfirm}
+    #添加发布产品
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","destination":${destination},"destinationId":${destinationId},"depotList":[{"name":"总部","value":"1","selected":true},{"name":"分销","value":"2","selected":true}],"items":[{"no":"XYY9","entity":"RESOURCE","entityId":${entityId},"entityName":${entityName},"showName":${showName},"entityType":${entityType},"typeRemark":${typeRemark},"capacity":${capacity},"extraInfo":${extraInfo},"highlight":${highlight},"usage":${usage},"include":${include},"notice":${notice},"idTypes":${idTypes},"twiceConfirm":${twiceConfirm},"days":1,"offset":"1"}],"groups":[{"index":0,"id":null,"name":null,"all":false,"items":[],"refundRule":{"selected":null,"items":[]},"partialRefund":null},{"index":1,"id":null,"name":${showName},"all":true,"items":[{"id":null,"no":"XYY9","entity":"RESOURCE","entityId":${entityId},"offset":"1","type":${typeRemark},"name":${showName}}],"refundRule":{"selected":{"id":null,"no":"XYY9","entity":"RESOURCE","entityId":${entityId},"offset":"1","type":${typeRemark},"name":${showName}},"items":["出行（使用）当天之前0天的6时前申请退款，退20%","出行（使用）当天之前0天的12时前申请退款，退10%","出行（使用）当天之前0天的18时前申请退款，退0%"]},"partialRefund":true}],"refundRules":[{"day":"0","hour":"0","percent":"0","time":0}],"refundText":"这里是发布产品退款退则展示内容","highlight":[{"text":"这里是产品亮点","editable":true}],"usage":[{"text":"这里是使用说明","editable":true}],"include":[{"text":"这里是费用包含","editable":true}],"notice":[{"text":"这里是预定须知","editable":true}],"id":null,"version":null}    /product/product/add
+    Json Value Should Equal    ${response}    /code    0
+
+搜索发布产品
+    SendGet_Recv200    /product/product/list?id=&name=&type=BUS_PACKAGE%2CBUS%2CRESOURCE_PACKAGE&valid=online%2Coffline&platformStatus=online%2Coffline
+    ${productID}    SelectFromPsycopg    SELECT * FROM "corp"."product" WHERE "name"='${information}';
+    Set Suite Variable    ${productID}    ${productID}
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "corp"."product" WHERE "name"='${information}';
+    Set Suite Variable    ${version}    ${version}
+
+查看发布产品
+    SendGet_Recv200    /product/product/detail/${productID}
+
+更新发布产品
+    #查询item内资源的id
+    ${itemID}    SelectFromPsycopg    SELECT * FROM "corp"."product_item" WHERE product_id=${productID};
+    #查询version的值
+    ${version}    SelectFromPsycopg    SELECT "version" FROM "corp"."product" WHERE "id"=${productID};
+    #查询groupID
+    ${group_id}    SelectFromPsycopg    SELECT group_id FROM "corp"."product_item" WHERE product_id=${productID};
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","destination":${destination},"destinationId":${destinationId},"depotList":[{"name":"总部","value":"1","selected":true},{"name":"分销","value":"2","selected":true}],"items":[{"id":${itemID},"entity":"RESOURCE","entityId":${entityId},"entityName":${entityName},"showName":${showName},"entityType":${entityType},"offset":1,"typeRemark":${typeRemark},"capacity":${capacity},"extraInfo":${extraInfo},"highlight":${highlight},"usage":${usage},"include":${include},"notice":${notice},"idTypes":${idTypes},"twiceConfirm":${twiceConfirm},"days":1,"nodes":null,"no":"XYY9","groupId":${group_id},"nodeResource":[]}],"groups":[{"index":0,"id":null,"name":null,"all":false,"items":[],"refundRule":{"selected":null,"items":[]},"partialRefund":null},{"index":${group_id},"id":${group_id},"name":${showName},"items":[{"id":${itemID},"no":"XYY9","entity":"RESOURCE","entityId":${entityId},"name":${showName},"offset":1,"type":${typeRemark},"groupId":${group_id}}],"refundRule":{"selected":{"id":${itemID},"no":"XYY9","entity":"RESOURCE","entityId":${entityId},"name":${showName},"offset":1,"type":${typeRemark},"groupId":${group_id}},"items":["出行（使用）当天之前0天的6时前申请退款，退20%","出行（使用）当天之前0天的12时前申请退款，退10%","出行（使用）当天之前0天的18时前申请退款，退0%"]},"partialRefund":true}],"refundRules":[{"day":"0","hour":"0","percent":"0"}],"refundText":"这里是发布产品退款退则展示内容","highlight":[{"text":"这里是产品亮点","editable":true}],"usage":[{"text":"这里是使用说明","editable":true}],"include":[{"text":"这里是费用包含","editable":true}],"notice":[{"text":"这里是预定须知","editable":true}],"id":${productID},"version":${version}}    /product/product/update
+    Json Value Should Equal    ${response}    /code    0
+
+下一页查看
+    SendGet_Recv200    /product/product/list?corpStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=1&pageSize=10&platformStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&typesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D
+
+页面跳转
+    SendGet_Recv200    /product/product/list?corpStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=1&pageSize=10&platformStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&typesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D
+
+10条/页查看
+    SendGet_Recv200    /product/product/list?corpStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&pageSize=10&platformStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&typesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D
+
+50条/页查看
+    SendGet_Recv200    /product/product/list?corpStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&pageSize=50&platformStatusOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D&typesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D

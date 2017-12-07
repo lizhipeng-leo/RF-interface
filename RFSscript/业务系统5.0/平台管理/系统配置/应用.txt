@@ -1,0 +1,6 @@
+*** Settings ***
+Resource          ../common.txt
+
+*** Test Cases ***
+应用列表
+    SendGet_Recv200    /app

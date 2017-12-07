@@ -1,0 +1,15 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+复购活动列表
+    SendGet_Recv200    /distribution/repeatpurchase
+
+搜索复购活动
+    SendGet_Recv200    /distribution/repeatpurchase/list?id=&activityName=&startTime=&endTime=&status=ALL
+
+10条/页查看
+    SendGet_Recv200    /distribution/repeatpurchase/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&pageSize=10&status=ALL
+
+50条/页查看
+    SendGet_Recv200    /distribution/repeatpurchase/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&pageSize=50&status=ALL

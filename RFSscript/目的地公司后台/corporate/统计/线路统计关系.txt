@@ -1,0 +1,15 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+线路统计关系页面
+    SendGet_Recv200    /settle/line
+
+线路推荐产品标签类别查看
+    SendGet_Recv200    /settle/line/list?tagGroup=%E6%8E%A8%E8%8D%90%E4%BA%A7%E5%93%81%E7%B1%BB%E5%88%AB
+
+线路统计资源类别查看
+    SendGet_Recv200    /settle/line/list?tagGroup=%E8%B5%84%E6%BA%90%E7%B1%BB%E5%88%AB
+
+线路统计线路类别查看
+    SendGet_Recv200    /settle/line/list?tagGroup=%E7%BA%BF%E8%B7%AF

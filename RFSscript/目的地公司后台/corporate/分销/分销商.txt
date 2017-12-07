@@ -1,0 +1,54 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+分销商列表
+    SendGet_Recv200    /distribution/distributor
+
+分销商搜索
+    SendGet_Recv200    /distribution/distributor/list?id=&name=&status=ALL
+
+分销商禁用
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=18    enable=false
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    ${bodydata}    /distribution/distributor/enable?id=18&enable=false
+    Json Value Should Equal    ${resp}    /code    0
+
+分销商启用
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=18    enable=true
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    ${bodydata}    /distribution/distributor/enable?id=18&enable=true
+    Json Value Should Equal    ${resp}    /code    0
+
+分销商查看
+    SendGet_Recv200    /distribution/distributor/detail?id=18
+
+分销商销售协议列表
+    SendGet_Recv200    /distribution/agreement/list?distributorId=18
+
+分销协议协议搜索
+    SendGet_Recv200    /distribution/agreement/list?id=&name=&distributorId=17&effectFrom=&effectUpto=&status=
+
+分销协议查看
+    SendGet_Recv200    /distribution/agreement/detail/17/7
+
+分销协议10条/页查看
+    SendGet_Recv200    /distribution/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&distributorId=17&pageSize=10
+
+分销协议50条/页查看
+    SendGet_Recv200    /distribution/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&distributorId=17&pageSize=50
+
+分销商协议搜索
+    SendGet_Recv200    /distribution/agreement/list?id=&name=&distributorId=18&effectFrom=&effectUpto=&status=
+
+分销协议10条/页查看
+    SendGet_Recv200    /distribution/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&distributorId=18&pageSize=10
+
+分销协议50条/页查看
+    SendGet_Recv200    /distribution/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&pageIndex=0&distributorId=18&pageSize=50
+
+分销商10条/页查看
+    SendGet_Recv200    /distribution/distributor/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&companyId=20000&pageIndex=0&pageSize=10
+
+分销商50条/页查看
+    SendGet_Recv200    /distribution/distributor/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&companyId=20000&pageIndex=0&pageSize=50

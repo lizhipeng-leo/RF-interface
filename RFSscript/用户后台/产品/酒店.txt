@@ -1,0 +1,115 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+酒店产品列表
+    SendGet_Recv200    /app/product/hotel/list
+
+新增酒店产品
+    #取出关联产品的id和name
+    :FOR    ${i}    IN RANGE    2    10
+    \    ${productsID}    ${productsName}    ${status}    loop
+    \    Exit For Loop If    '${status}'=='false'
+    \    ${productsID}    ${productsName}    ${status}    forloop    ${i}
+    \    Exit For Loop If    '${status}'=='false'
+    #设置变量为测试套件变量
+    Set Suite Variable    ${productsID}    ${productsID}
+    Set Suite Variable    ${productsName}    ${productsName}
+    #查询资源
+    ${resourceResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/resource/hotel/select
+    ${resourceID}    Get Json Value    ${resourceResponse}    /data/0/id
+    ${resourceName}    Get Json Value    ${resourceResponse}    /data/0/name
+    #设置变量为测试套件变量
+    Set Suite Variable    ${resourceID}    ${resourceID}
+    Set Suite Variable    ${resourceName}    ${resourceName}
+    #查看标签
+    ${tagResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/tag/select
+    ${tagID}    Get Json Value    ${tagResponse}    /data/0/id
+    ${tagName}    Get Json Value    ${tagResponse}    /data/0/name
+    #设置变量为测试套件变量
+    Set Suite Variable    ${tagID}    ${tagID}
+    Set Suite Variable    ${tagName}    ${tagName}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #新增酒店产品
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "sellingPrice": "1", \ \ \ \ "price": "1", \ \ \ \ "salesVolume": "1", \ \ \ \ "appResourceId": ${resourceID}, \ \ \ \ "appResourceName": ${resourceName}, \ \ \ \ "includeItems": "<h3>这里请输入标题</h3>", \ \ \ \ "notice": "<h3>这里请输入标题</h3>", \ \ \ \ "cancelRescheduleRule": "<h3>这里请输入标题</h3>", \ \ \ \ "appTagId": ${tagID}, \ \ \ \ "appTagName": ${tagName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_product/f3deab8805326648940ecf1da9a56172.png", \ \ \ \ "listImage": "https://images.simpletour.com/simpletour/images/app_product/c6c8a03f5498ceee3f57dc335cec8d24.png", \ \ \ \ "weight": "1", \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "isMustExperience": false, \ \ \ \ "productId": ${productsID}, \ \ \ \ "productName": ${productsName}, \ \ \ \ "deadline": -64800, \ \ \ \ "deadlineStr": "0-18-0", \ \ \ \ "instructions": "<h3>这里请输入标题</h3>", \ \ \ \ "remarkObject": { \ \ \ \ \ \ \ \ "remarkName": "", \ \ \ \ \ \ \ \ "remarkContent": "" \ \ \ \ }, \ \ \ \ "needRemark": false, \ \ \ \ "needAssistant": true, \ \ \ \ "needInfo": "name,mobile", \ \ \ \ "platformInfo": "APP,WZ", \ \ \ \ "id": null }    /app/product/hotel
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索酒店产品
+    ${bodydata}    Create Dictionary    name=${information}    associatedProduct=    isMustExperience=    online=    platformInfo=
+    ...    appDestinationName=    appDestinationId=
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/product/hotel/list
+    #获取ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_product" WHERE "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${hotelID}    ${id}
+
+查看酒店产品
+    SendGet_Recv200    /app/product/hotel/${hotelID}?appDestinationName=&associatedProduct=&index=1&name=%E8%87%AA%E5%8A%A8%E5%8C%96%E5%88%9B%E5%BB%BA&platformInfo=&size=10&type=hotel
+
+更新酒店产品
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "sellingPrice": "1", \ \ \ \ "price": "1", \ \ \ \ "salesVolume": "1", \ \ \ \ "appResourceId": ${resourceID}, \ \ \ \ "appResourceName": ${resourceName}, \ \ \ \ "includeItems": "<h3>这里请输入标题</h3>", \ \ \ \ "notice": "<h3>这里请输入标题</h3>", \ \ \ \ "cancelRescheduleRule": "<h3>这里请输入标题</h3>", \ \ \ \ "appTagId": ${tagID}, \ \ \ \ "appTagName": ${tagName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_product/f3deab8805326648940ecf1da9a56172.png", \ \ \ \ "listImage": "https://images.simpletour.com/simpletour/images/app_product/c6c8a03f5498ceee3f57dc335cec8d24.png", \ \ \ \ "weight": "1", \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "isMustExperience": false, \ \ \ \ "productId": ${productsID}, \ \ \ \ "productName": ${productsName}, \ \ \ \ "deadline": -64800, \ \ \ \ "deadlineStr": "0-18-0", \ \ \ \ "instructions": "<h3>这里请输入标题</h3>", \ \ \ \ "remarkObject": { \ \ \ \ \ \ \ \ "remarkName": "", \ \ \ \ \ \ \ \ "remarkContent": "" \ \ \ \ }, \ \ \ \ "needRemark": false, \ \ \ \ "needAssistant": true, \ \ \ \ "needInfo": "name,mobile", \ \ \ \ "platformInfo": "APP,WZ", \ \ \ \ "id": ${hotelID} }    /app/product/hotel/282
+    Json Value Should Equal    ${responsedata}    /code    0
+
+上线酒店产品
+    ${responseData}    SendGet_Recv200    /app/product/hotel/${hotelID}/status/true
+    Json Value Should Equal    ${responseData}    /code    0
+
+下线酒店产品
+    ${responseData}    SendGet_Recv200    /app/product/hotel/${hotelID}/status/false
+    Json Value Should Equal    ${responseData}    /code    0
+
+获取被复制酒店产品信息
+    SendGet_Recv200    /app/product/hotel/copy/${hotelID}?index=1&size=10&type=hotel
+
+生成复制酒店产品
+    #查询关联的酒店产品
+    ${productsResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/product/hotel/products
+    #取出关联产品的id和name
+    : FOR    ${i}    IN RANGE    0    10
+    \    ${status}    Get Json Value    ${productsResponse}    /data/${i}/used
+    \    ${productsID}    Get Json Value    ${productsResponse}    /data/${i}/id
+    \    ${productsName}    Get Json Value    ${productsResponse}    /data/${i}/name
+    \    Exit For Loop If    '${status}'=='false'
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    ${information}copy
+    #新增酒店产品
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "sellingPrice": "1", \ \ \ \ "price": "1", \ \ \ \ "salesVolume": "1", \ \ \ \ "appResourceId": ${resourceID}, \ \ \ \ "appResourceName": ${resourceName}, \ \ \ \ "includeItems": "<h3>这里请输入标题</h3>", \ \ \ \ "notice": "<h3>这里请输入标题</h3>", \ \ \ \ "cancelRescheduleRule": "<h3>这里请输入标题</h3>", \ \ \ \ "appTagId": ${tagID}, \ \ \ \ "appTagName": ${tagName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_product/f3deab8805326648940ecf1da9a56172.png", \ \ \ \ "listImage": "https://images.simpletour.com/simpletour/images/app_product/c6c8a03f5498ceee3f57dc335cec8d24.png", \ \ \ \ "weight": "1", \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "isMustExperience": false, \ \ \ \ "productId": ${productsID}, \ \ \ \ "productName": ${productsName}, \ \ \ \ "deadline": -64800, \ \ \ \ "deadlineStr": "0-18-0", \ \ \ \ "instructions": "<h3>这里请输入标题</h3>", \ \ \ \ "remarkObject": { \ \ \ \ \ \ \ \ "remarkName": "", \ \ \ \ \ \ \ \ "remarkContent": "" \ \ \ \ }, \ \ \ \ "needRemark": false, \ \ \ \ "needAssistant": true, \ \ \ \ "needInfo": "name,mobile", \ \ \ \ "platformInfo": "APP,WZ", \ \ \ \ "id": null }    /app/product/hotel
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除酒店产品
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/product/hotel/delete/${hotelID}
+    Json Value Should Equal    ${responsedata}    /code    0
+    #获取ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_product" WHERE "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${CopyhotelID}    ${id}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/product/hotel/delete/${CopyhotelID}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页翻页
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/product/hotel/list?index=${i}&size=10&type=hotel
+
+*** Keywords ***
+forloop
+    [Arguments]    ${j}
+    ${productsResponse}    SendPost_Recv200    application/json;charset=UTF-8    {index: ${j}, size: 10, name: ""}    /app/product/hotel/products
+    : FOR    ${i}    IN RANGE    0    10
+    \    ${status}    Get Json Value    ${productsResponse}    /data/${i}/used
+    \    ${productsID}    Get Json Value    ${productsResponse}    /data/${i}/id
+    \    ${productsName}    Get Json Value    ${productsResponse}    /data/${i}/name
+    \    Exit For Loop If    '${status}'=='false'
+    [Return]    ${productsID}    ${productsName}    ${status}
+
+loop
+    ${productsResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/product/hotel/products
+    : FOR    ${i}    IN RANGE    0    10
+    \    ${status}    Get Json Value    ${productsResponse}    /data/${i}/used
+    \    ${productsID}    Get Json Value    ${productsResponse}    /data/${i}/id
+    \    ${productsName}    Get Json Value    ${productsResponse}    /data/${i}/name
+    \    Exit For Loop If    '${status}'=='false'
+    [Return]    ${productsID}    ${productsName}    ${status}

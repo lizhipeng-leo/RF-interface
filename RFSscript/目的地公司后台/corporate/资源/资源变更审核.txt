@@ -1,0 +1,25 @@
+*** Settings ***
+Force Tags        FirstQuarter
+Resource          ResourceCommon.tsv
+
+*** Test Cases ***
+资源变更审核列表
+    SendGet_Recv200    /resource/apply
+
+搜索变更审核
+    SendGet_Recv200    /resource/apply/list?resourceId=&resourceName=&ospName=&startDay=&endDay=&applyBy=&status=ALL
+
+查看变更审核内容
+    #搜索一个待审核数据
+    ${resourceID}    SelectFromPsycopg    SELECT * FROM "corp"."resource_apply" WHERE status='PENDING' LIMIT 1;
+    Set Suite Variable    ${resourceID}    ${resourceID}
+    SendGet_Recv200    /resource/apply/${resourceID}/detail/true
+
+查看变更审核价格
+    SendGet_Recv200    /resource/apply/${resourceID}/prices/list/true
+
+10条/页数据查看
+    SendGet_Recv200    /resource/apply/list?firstError=&pageIndex=0&pageSize=10&errors=
+
+50条/页数据查看
+    SendGet_Recv200    /resource/apply/list?firstError=&pageIndex=0&pageSize=50&errors=

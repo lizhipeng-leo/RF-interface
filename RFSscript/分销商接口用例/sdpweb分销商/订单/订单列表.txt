@@ -1,0 +1,57 @@
+*** Settings ***
+Resource          ../common.tsv
+
+*** Test Cases ***
+订单列表
+    [Setup]    预定产品
+    SendGet_Recv200    /distributor/order/list
+
+搜索订单
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=    productName=    username=    userMobile=    orderStartTime=
+    ...    orderEndTime=    travelStartDate=    travelEndDate=
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /distributor/order/list
+
+查看订单
+    #查询分销订单id
+    ${ID}    SelectFromPsycopg    SELECT * FROM "dist"."order" WHERE agent_id=7;
+    #发送get请求
+    SendGet_Recv200    /distributor/order/edit/${ID}
+
+导出订单
+    GetRequests    /distributor/order/export?
+
+确认订单
+    #查询分销商id
+    ${distributorID}    SelectFromPsycopg    SELECT * FROM "dist"."order" WHERE agent_id=7 AND status='PENDING' ORDER BY createdtime desc;
+    ${orderID}    SelectFromPsycopg    SELECT order_id FROM "dist"."order" WHERE agent_id=7 AND status='PENDING' ORDER BY createdtime DESC;
+    #设置id为测试套件变量
+    Set Suite Variable    ${distributorID}    ${distributorID}
+    Set Suite Variable    ${orderID}    ${orderID}
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${distributorID}    operation=confirm    orderId=${orderID}
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /distributor/order/status
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+申请退款
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${distributorID}    operation=refund    orderId=${orderID}
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /distributor/order/status
+    #判断是否成功
+    Json Value Should Equal    ${responsedata}    /code    0
+
+*** Keywords ***
+预定产品
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #获取当前时间
+    ${y}    ${m}    ${d}    Get Time    year,month,day
+    ${time}    Set Variable    ${y}-${m}-${d}
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "productName": "【限时抢购】峨眉山观岭森林温泉", \ \ \ \ "productType": "entertainment", \ \ \ \ "id": 2945, \ \ \ \ "agreementProductId": 32647, \ \ \ \ "distributorProductId": 2945, \ \ \ \ "day": "${time}", \ \ \ \ "quantity": 1, \ \ \ \ "name": "自动化接口测试${randomstring}", \ \ \ \ "mobile": "13648009749", \ \ \ \ "idType": "HKM_TRAVEL_PERMIT", \ \ \ \ "idNo": "333", \ \ \ \ "deadLine": -85500, \ \ \ \ "refund": { \ \ \ \ \ \ \ \ "remark": "<p>出行日期前3天之前（不含3天）申请取消或改期，不收取损失费；</p><p>出行日期前1天之前申请取消或改期，收取50%损失费；</p><p>出行日期前1天之内及以后申请取消或改期，收取100%损失费。</p><p>（例：出行日期为3月15日，3月12日之前取消或或改期不收取损失，3月12日当天至3月14日之前取消或改期收取50%损失，3月14日当天取消或改期收取100%损失。）</p><p><br/></p>", \ \ \ \ \ \ \ \ "rules": [ \ \ \ \ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "ratio": 0, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "timing": 24 \ \ \ \ \ \ \ \ \ \ \ \ }, \ \ \ \ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "ratio": 50, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "timing": 48 \ \ \ \ \ \ \ \ \ \ \ \ }, \ \ \ \ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "ratio": 100, \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "timing": 96 \ \ \ \ \ \ \ \ \ \ \ \ } \ \ \ \ \ \ \ \ ] \ \ \ \ }, \ \ \ \ "remark": "", \ \ \ \ "amount": 230 }    /distributor/order/add
+    #判断是否失败
+    Json Value Should Equal    ${responsedata}    /code    0

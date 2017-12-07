@@ -1,0 +1,4 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***

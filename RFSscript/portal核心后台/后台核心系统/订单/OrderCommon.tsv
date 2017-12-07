@@ -1,0 +1,149 @@
+*Settings*							
+Library	RequestsLibrary						
+Library	String						
+Library	DatabaseLibrary						
+Library	String						
+Library	HttpLibrary.HTTP						
+Library	XML						
+							
+*Variables*							
+@{DatabaseInfor}	simpletour_uat_admin	simpletour	hUek234lkJE1	123.57.0.3	5432	#数据库名称|数据库用户名|数据库密码|数据库ip地址|数据库端口	
+${httpurl}	http://uat.order.simpletour.com						
+							
+*Keywords*							
+GetRequests	[Arguments]	${url}					
+	[Documentation]	描述：发送一个get请求，返回response和响应状态					
+	...						
+	...	${jsessionid} 表示登录后的jsessionid					
+	...	${url}表示发送get请求的url地址					
+	...						
+	...	返回的是响应数据					
+	...						
+	...	author：李志鹏					
+	#创建头文件和cookie（字典型）						
+	${header}	Create Dictionary	Content-Type=application/json;charset=UTF-8				
+	${cookie}	Create Dictionary	JSESSIONID=${jsessionid}				
+	#登录一个http的会话						
+	Create Session	api	${httpurl}	headers=${header}	cookies=${cookie}		
+	#发送						
+	${addr}	Get Request	api	${url}			
+	log	${addr.status_code}					
+	#检查点（响应状态为200）						
+	Should Be Equal As Strings	${addr.status_code}	200				
+	Delete All Sessions						
+	[Return]	${addr.content}					
+							
+PostRequests	[Arguments]	${contenttype}	${bodydata}	${url}			
+	[Documentation]	描述：发送一个get请求，返回response和响应状态					
+	...						
+	...	${jsessionid} 表示登录后的jsessionid					
+	...	${url}表示发送get请求的url地址					
+	...						
+	...	返回的是响应数据					
+	...						
+	...	author：李志鹏					
+	${header}	Create Dictionary	Content-Type=${contenttype}				
+	${cookie}	Create Dictionary	JSESSIONID=${jsessionid}				
+	#创建body数据（json格式）						
+	${data}	Set Variable	${bodydata}				
+	Log	${data}					
+	#创建一个http会话						
+	Create Session	api	${httpurl}	headers=${header}	cookies=${cookie}		
+	#发送post请求						
+	${addr}	Post Request	api	${url}	data=${data}		
+	#检查点（响应状态为200）						
+	Should Be Equal As Strings	${addr.status_code}	200				
+	Delete All Sessions						
+	[Return]	${addr.content}					
+							
+SendGet_Recv200	[Arguments]	${url}					
+	[Documentation]	描述：把发送的get请求转换成UTF-8					
+	...						
+	...	${jsessionid} 表示登录后的jsessionid					
+	...	${url}表示发送get请求的url地址					
+	...						
+	...	返回的是响应数据					
+	...						
+	...	author：李志鹏					
+	#发送get请求						
+	${responsedata}	GetRequests	${url}				
+	#格式转换成UTF-8						
+	${responsedata}	Decode Bytes To String	${responsedata}	UTF-8			
+	#打印日志						
+	log	${responsedata}					
+	[Return]	${responsedata}					
+							
+SendPost_Recv200	[Arguments]	${contenttype}	${bodydata}	${url}			
+	[Documentation]	描述：把发送的post请求转换成UTF-8					
+	...						
+	...	${jsessionid} 表示登录后的jsessionid					
+	...	${url}表示发送get请求的url地址					
+	...						
+	...	返回的是响应数据					
+	...						
+	...	author：李志鹏					
+	#发送post请求						
+	${responsedata}	PostRequests	${contenttype}	${bodydata}	${url}		
+	#格式转换成UTF-8						
+	${responsedata}	Decode Bytes To String	${responsedata}	UTF-8			
+	#打印日志						
+	log	${responsedata}					
+	[Return]	${responsedata}					
+							
+SendDelete_Recv200	[Arguments]	${url}					
+	[Documentation]	描述：发送一个DELETE请求，返回response和响应状态					
+	...						
+	...	${jsessionid} 表示登录后的jsessionid					
+	...	${url}表示发送get请求的url地址					
+	...						
+	...	返回的是响应数据					
+	...						
+	...	author：李志鹏					
+	#创建头文件和cookie（字典型）						
+	${header}	Create Dictionary	Content-Type=application/json;charset=UTF-8				
+	${cookie}	Create Dictionary	JSESSIONID=${jsessionid}				
+	#登录一个http的会话						
+	Create Session	api	${httpurl}	headers=${header}	cookies=${cookie}		
+	#发送delete请求						
+	${addr}	Delete Request	api	${url}			
+	log	${addr.status_code}					
+	#检查点（响应状态为200）						
+	Should Be Equal As Strings	${addr.status_code}	200				
+	#打印出响应数据						
+	log	${addr.content}					
+	Delete All Sessions						
+	[Return]	${addr.content}					
+							
+SelectFromPsycopg	[Arguments]	${selectsql}					
+	[Documentation]	描述：该关键字用于登录psycopg数据库，做select操作查询出第一列的信息					
+	...						
+	...						
+	...	${selectsql}是需要传进去的查询语句					
+	...						
+	...						
+	...	返回的是查询结果的第一个参数					
+	...						
+	...						
+	...	author：李志鹏					
+	#连接数据库(搜索行程序列id)						
+	Connect To Database	psycopg2	@{DatabaseInfor}[0]	@{DatabaseInfor}[1]	@{DatabaseInfor}[2]	@{DatabaseInfor}[3]	@{DatabaseInfor}[4]
+	${id}	Query	${selectsql}				
+	log	${id[0][0]}					
+	Disconnect From Database						
+	[Return]	${id[0][0]}					
+							
+DeleteFromPsycopg	[Arguments]	${deletesql}					
+	[Documentation]	描述：该关键字用于登录psycopg数据库，做delete操作					
+	...						
+	...						
+	...	${deletesql}是需要传进去的删除sql语句					
+	...						
+	...						
+	...						
+	...						
+	...						
+	...	author：李志鹏					
+	#连接数据库（删除行程商品）						
+	Connect To Database	psycopg2	@{DatabaseInfor}[0]	@{DatabaseInfor}[1]	@{DatabaseInfor}[2]	@{DatabaseInfor}[3]	@{DatabaseInfor}[4]
+	Execute Sql String	${deletesql}					
+	Disconnect From Database						

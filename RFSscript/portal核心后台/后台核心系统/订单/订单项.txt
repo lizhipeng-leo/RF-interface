@@ -1,0 +1,155 @@
+*** Settings ***
+Resource          OrderCommon.tsv
+Library           requests
+Library           Selenium2Library
+
+*** Test Cases ***
+订单项列表查看
+    #获取当前时间
+    ${y}    ${m}    ${d}    Get Time    year,month,day
+    ${time}    Set Variable    ${y}-${m}-${d}
+    #记录录单开始时间
+    ${y}    ${m}    ${d}    ${h}    ${min}    ${s}    Get Time
+    ...    year month day hour min sec
+    ${time1}    Set Variable    ${y}-${m}-${d} ${h}:${min}:${s}
+    Set Suite Variable    ${time1}    ${time1}
+    #把当前时间设为全局变量
+    Set Suite Variable    ${time}    ${time}
+    #发送get请求（订单项列表查看）
+    SendGet_Recv200    /order/business/list
+
+订单项搜索
+    #录单
+    录单
+    #录第二个单
+    录单
+    #录第三个单
+    录单
+    #连接数据库(搜索行程序列id)
+    Connect To Database    psycopg2    @{DatabaseInfor}[0]    @{DatabaseInfor}[1]    @{DatabaseInfor}[2]    @{DatabaseInfor}[3]    @{DatabaseInfor}[4]
+    ${id}    Query    SELECT * FROM "public"."mars_order" ORDER BY createdtime DESC LIMIT 5;
+    Disconnect From Database
+    #设置订单id为全部变量
+    Set Global Variable    ${Item_ID}    ${id[0][9]}
+    #设置订单id为全局变量
+    Set Global Variable    ${Item_ID_1}    ${id[1][9]}
+    #设置订单id为全局变量
+    Set Global Variable    ${Item_ID_2}    ${id[2][9]}
+    #设置录单id
+    ${marsID}    Set Variable    ${id[0][0]}
+    ${marsID_1}    Set Variable    ${id[1][0]}
+    ${marsID_2}    Set Variable    ${id[2][0]}
+    #设置订单id
+    ${orderID}    Set Variable    ${id[0][12]}
+    ${orderID_1}    Set Variable    ${id[1][12]}
+    ${orderID_2}    Set Variable    ${id[2][12]}
+    #发送get请求（订单项搜索）
+    ${responsedata}    SendGet_Recv200    /order/business/list?orderNo=&productName=&contactName=&contactMobile=&travelName=&travelMobile=&travelStartDate=&travelEndDate=&orderStartDate=&orderEndDate=&saleAppName=&saleApp=
+    #录单确认订单
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${marsID}    operation=confirm    orderId=${orderID}    source=简途线上自营
+    #发送post请求（确认订单）
+    ${responsedata}    订单确认    ${bodydata}    /mars/order/status
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+    #录单确认订单
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${marsID_1}    operation=confirm    orderId=${orderID_1}    source=简途线上自营
+    #发送post请求（确认订单）
+    ${responsedata}    订单确认    ${bodydata}    /mars/order/status
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+    #录单确认订单
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${marsID_2}    operation=confirm    orderId=${orderID_2}    source=简途线上自营
+    #发送post请求（确认订单）
+    ${responsedata}    订单确认    ${bodydata}    /mars/order/status
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+    #录单模块申请退款
+    录单模块申请退款    ${marsID_1}    ${orderID_1}
+    录单模块申请退款    ${marsID}    ${orderID}
+
+订单项查看
+    #发送get请求（订单项查看）
+    SendGet_Recv200    /order/business/edit/${Item_ID}
+
+前十页翻页
+    Comment    #发送get请求（翻页操作）
+    Comment    : FOR    ${i}    IN RANGE    1    11
+    Comment    \    SendGet_Recv200    /order/business/list?index=${i}&totalCount=0&size=10
+
+中间十页翻页
+    Comment    #发送get请求（翻页操作）
+    Comment    : FOR    ${i}    IN RANGE    10000    10010
+    Comment    \    SendGet_Recv200    /order/business/list?index=${i}&totalCount=0&size=10
+
+后十页翻页
+    Comment    #发送get请求（翻页操作）
+    Comment    : FOR    ${i}    IN RANGE    15000    150010
+    Comment    \    SendGet_Recv200    /order/business/list?index=${i}&totalCount=0&size=10
+
+取消订单项
+    #发送get请求（取消订单项）
+    SendGet_Recv200    /order/business/cancel/${Item_ID_2}
+
+*** Keywords ***
+录单
+    #获取当前时间
+    ${y}    ${m}    ${d}    Get Time    year,month,day
+    ${time}    Set Variable    ${y}-${m}-${d}
+    #发送post请求（录单）
+    ${header}    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    ${cookie}    Create Dictionary    JSESSIONID=${jsessionidmars}
+    #创建body数据（json格式）
+    ${data}    Set Variable    { \ \ \ \ "id": null, \ \ \ \ "orderId": null, \ \ \ \ "itemId": null, \ \ \ \ "name": "自动化接口录单", \ \ \ \ "mobile": "13611111111", \ \ \ \ "idType": "TW_TRAVEL_PERMIT", \ \ \ \ "idNo": "12", \ \ \ \ "source": "简途线上自营", \ \ \ \ "sourceOrderId": "", \ \ \ \ "amount": "60.00", \ \ \ \ "day": "${time}", \ \ \ \ "productId": 7136, \ \ \ \ "productName": "松潘古城墙门票", \ \ \ \ "adultPrice": "30.00", \ \ \ \ "childPrice": "30.00", \ \ \ \ "adultQuantity": 2, \ \ \ \ "childQuantity": 0, \ \ \ \ "procurements": [], \ \ \ \ "busNos": [], \ \ \ \ "refund": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "ratio": 100, \ \ \ \ \ \ \ \ \ \ \ \ "timing": 24 \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "remark": "这里填写备注信息", \ \ \ \ "version": null, \ \ \ \ "customers": null }
+    Log    ${data}
+    #创建一个http会话
+    Create Session    api    http://uat.mars.simpletour.com    headers=${header}    cookies=${cookie}
+    #发送post请求
+    ${addr}    Post Request    api    /mars/order/add    data=${data}
+    #检查点（响应状态为200）
+    Should Be Equal As Strings    ${addr.status_code}    200
+    ${message}    Decode Bytes To String    ${addr.content}    UTF-8
+    log    ${message}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${addr.content}    /code    0
+    Delete All Sessions
+
+订单确认
+    [Arguments]    ${bodydata}    ${url}
+    ${header}    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${cookie}    Create Dictionary    JSESSIONID=${jsessionidmars}
+    #创建body数据（json格式）
+    ${data}    Set Variable    ${bodydata}
+    Log    ${data}
+    #创建一个http会话
+    Create Session    api    http://uat.mars.simpletour.com    headers=${header}    cookies=${cookie}
+    #发送post请求
+    ${addr}    Post Request    api    ${url}    data=${data}
+    #检查点（响应状态为200）
+    Should Be Equal As Strings    ${addr.status_code}    200
+    Delete All Sessions
+    [Return]    ${addr.content}
+
+录单模块申请退款
+    [Arguments]    ${marsID}    ${OrderID}
+    #创建body数据
+    ${bodydata}    Create Dictionary    id=${marsID}    operation=refund    orderId=${OrderID}    source=简途线上自营
+    #发送post请求（录单）
+    ${header}    Create Dictionary    Content-Type=application/x-www-form-urlencoded; charset=UTF-8
+    ${cookie}    Create Dictionary    JSESSIONID=${jsessionidmars}
+    #创建body数据（json格式）
+    ${data}    Set Variable    ${bodydata}
+    Log    ${data}
+    #创建一个http会话
+    Create Session    api    http://uat.mars.simpletour.com    headers=${header}    cookies=${cookie}
+    #发送post请求
+    ${addr}    Post Request    api    /mars/order/status    data=${data}
+    #检查点（响应状态为200）
+    Should Be Equal As Strings    ${addr.status_code}    200
+    ${message}    Decode Bytes To String    ${addr.content}    UTF-8
+    log    ${message}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${addr.content}    /code    0
+    Delete All Sessions

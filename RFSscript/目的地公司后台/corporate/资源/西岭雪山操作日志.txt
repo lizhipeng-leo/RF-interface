@@ -1,0 +1,10 @@
+*** Settings ***
+Force Tags        FirstQuarter
+Resource          ResourceCommon.tsv
+
+*** Test Cases ***
+操作日志
+    #查询不报错即可
+    SendGet_Recv200    /resource/xlxs_log/list?useDayStart=2017-01-01&useDayEnd=2017-01-31&operateStart=&operateEnd=&operate=&name=&mobile=&productName=&result=success
+    Comment    #导出不报错
+    Comment    SendGet_Recv200    /resource/xlxs_log/excel?operateStart=&result=%E6%88%90%E5%8A%9F&operate=&mobile=&name=&operateEnd=&useDayStart=2017-01-01&useDayEnd=2017-01-31&productName=

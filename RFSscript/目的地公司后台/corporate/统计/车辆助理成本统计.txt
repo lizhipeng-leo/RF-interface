@@ -1,0 +1,18 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+车辆助理成本统计页面
+    SendGet_Recv200    /settle/bus_assistant_cost
+
+搜索数据
+    SendGet_Recv200    /settle/bus_assistant_cost/list?startTime=&endTime=&lineName=&license=&distributorId=
+
+下一页数据查看
+    SendGet_Recv200    /settle/bus_assistant_cost/list?pageIndex=1&pageSize=10
+
+10条/页数据查看
+    SendGet_Recv200    /settle/bus_assistant_cost/list?pageIndex=0&pageSize=10
+
+50条/页数据查看
+    SendGet_Recv200    /settle/bus_assistant_cost/list?pageIndex=0&pageSize=50

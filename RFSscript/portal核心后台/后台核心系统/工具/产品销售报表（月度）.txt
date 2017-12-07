@@ -1,0 +1,18 @@
+*** Settings ***
+Resource          ReportCommon.tsv
+
+*** Test Cases ***
+产品销售报表列表
+    #发送post请求（产品销售报表列表）
+    SendGet_Recv200    /report/product/sold/list
+
+高级筛选
+    #创建body数据
+    ${bodydata}    Create Dictionary    productName=    orderStartDate=2016-08-09 00:00    orderEndDate=2016-08-11 00:00    productTypes=bus    productTypes=hotel
+    ...    productTypes=scenic    productTypes=catering    productTypes=entertainment
+    #发送post请求（高级筛选）
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /report/product/sold/list
+
+导出产品销售报表
+    #发送get请求（导出产品销售报表）
+    GetRequests    /report/product/sold/export?productTypes=bus&productTypes=hotel&productTypes=scenic&productTypes=catering&productTypes=entertainment&orderStartDate=2016-08-09+00%3A00&orderEndDate=2016-08-11+00%3A00&productName=

@@ -1,0 +1,94 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+渠道列表
+    SendGet_Recv200    /sale/channel
+
+添加渠道
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #测试条件变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    Set Suite Variable    ${AgreeInformation}    废弃协议${randomstring}
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"id":null,"name":"${information}","channelStatus":"DISABLED","channelType":"DISTRIBUTOR","orderType":"CONFIRMED","orderConfirmationTimeout":null,"saleAgreements":[],"version":0}    /sale/channel/add
+    Json Value Should Equal    ${response}    /code    0
+
+搜索渠道
+    SendGet_Recv200    /sale/channel/list?id=&name=&type=ALL&status=ALL
+
+查看渠道
+    #查询渠道id
+    ${saleID}    SelectFromPsycopg    SELECT * FROM "corp"."sale_channel" WHERE "name"='${information}';
+    Set Suite Variable    ${saleID}    ${saleID}
+    SendGet_Recv200    /sale/channel/detail/${saleID}
+
+更新渠道
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"id":${saleID},"name":"${information}","channelType":"DISTRIBUTOR","version":0,"channelStatus":"DISABLED","orderType":"CONFIRMED","orderConfirmationTimeout":null,"saleAgreements":null}    /sale/channel/edit
+    Json Value Should Equal    ${response}    /code    0
+
+启用渠道
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/channel/changeStatus/${saleID}/ENABLED
+    Json Value Should Equal    ${response}    /code    0
+
+禁用渠道
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/channel/changeStatus/${saleID}/DISABLED
+    Json Value Should Equal    ${response}    /code    0
+
+协议列表
+    SendGet_Recv200    /sale/channel/agreements/${saleID}/${information}
+
+渠道-协议列表-添加协议
+    #获取当前时间，精确到天
+    ${time}    Get Time
+    #取出年和月
+    ${day}    Split String    ${time}    ${SPACE}
+    log    ${day[0]}
+    Set Suite Variable    ${day[0]}    ${day[0]}
+    #添加一个确认的协议
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"companyId":null,"channelId":${saleID},"id":null,"name":"${information}","effectFrom":"${day[0]}","effectUpto":"${day[0]}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"settlementOffset":"3","paymentType":"ALIPAY","payeeBankInfo":"","payeeName":"姓名","payeeAccount":"账号","status":"DRAFT"}    /sale/agreement/add
+    Json Value Should Equal    ${response}    /code    0
+    #添加一个废弃的协议
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"companyId":null,"channelId":${saleID},"id":null,"name":"${AgreeInformation}","effectFrom":"${day[0]}","effectUpto":"${day[0]}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"settlementOffset":"3","paymentType":"ALIPAY","payeeBankInfo":"","payeeName":"姓名","payeeAccount":"账号","status":"DRAFT"}    /sale/agreement/add
+    Json Value Should Equal    ${response}    /code    0
+
+渠道-协议列表-搜索协议
+    SendGet_Recv200    /sale/agreement/list?agreementId=&agreementName=&channelId=${saleID}&effectFrom=&effectUpto=&status=ALL
+
+渠道-协议列表-查看协议
+    #查询协议id
+    ${agreementID}    SelectFromPsycopg    SELECT * FROM "corp"."sale_agreement" WHERE sale_channel_id=${saleID} AND "name"='${information}';
+    Set Suite Variable    ${agreementID}    ${agreementID}
+    SendGet_Recv200    /sale/agreement/detail/${saleID}/${agreementID}
+
+渠道-协议列表-更新协议
+    ${respon}    SendPost_Recv200    application/json;charset=UTF-8    {"companyId":null,"channelId":${saleID},"id":${agreementID},"name":"${information}","effectFrom":"${day[0]}","effectUpto":"${day[0]}","accountingPeriodType":"MONTHLY","accountingPeriodOffset":25,"settlementOffset":3,"paymentType":"ALIPAY","payeeBankInfo":"","payeeName":"姓名","payeeAccount":"账号","status":"DRAFT"}    /sale/agreement/edit
+    Json Value Should Equal    ${respon}    /code    0
+
+渠道-协议列表-确认操作
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/agreement/changeStatus/${saleID}/${agreementID}/APPROVED
+    Json Value Should Equal    ${response}    /code    0
+
+渠道-协议列表-终止操作
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/agreement/changeStatus/${saleID}/${agreementID}/TERMINATED
+    Json Value Should Equal    ${response}    /code    0
+
+渠道-协议列表-废弃操作
+    #查询需要废弃协议的id
+    ${SUSPENDED}    SelectFromPsycopg    SELECT * FROM "corp"."sale_agreement" WHERE sale_channel_id=${saleID} AND "name"='${AgreeInformation}';
+    Set Suite Variable    ${SUSPENDED}    ${SUSPENDED}
+    ${response}    SendPut_Recv200    application/json;charset=UTF-8    \    /sale/agreement/changeStatus/${saleID}/${SUSPENDED}/SUSPENDED
+    Json Value Should Equal    ${response}    /code    0
+
+渠道-协议列表-10条/页数据查看
+    SendGet_Recv200    /sale/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&firstError=&pageSize=10&pageIndex=0&domain=%2Fsale%2Fagreement%2F&channelId=${saleID}&errors=
+
+渠道-协议列表-50条/页数据查看
+    SendGet_Recv200    /sale/agreement/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&firstError=&pageSize=50&pageIndex=0&domain=%2Fsale%2Fagreement%2F&channelId=${saleID}&errors=
+
+10条/页数据查看
+    SendGet_Recv200    /sale/channel/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&firstError=&pageIndex=0&domain=%2Fsale%2Fchannel%2F&pageSize=10&typesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&errors=
+
+50条/页数据查看
+    SendGet_Recv200    /sale/channel/list?statusesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&firstError=&pageIndex=0&domain=%2Fsale%2Fchannel%2F&pageSize=50&typesOptions=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D&errors=

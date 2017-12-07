@@ -1,0 +1,64 @@
+*** Settings ***
+Resource          ProductCommon.tsv
+Library           Collections
+
+*** Test Cases ***
+统计标签列表
+    #发送get请求
+    SendGet_Recv200    http://uat.product.simpletour.com    /product/tagGroup/
+
+添加标签类别
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #设置为测试套件变量
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #发送post请求
+    ${response}    SendPost_Recv200    http://uat.product.simpletour.com    application/json;charset=UTF-8    {"id":null,"name":"${information}","version":0}    /product/tagGroup/add
+    #检查是否添加成功
+    Json Value Should Equal    ${response}    /code    0
+
+搜索标签类别
+    #发送get请求
+    ${responsedata}    SendGet_Recv200    http://uat.product.simpletour.com    /product/tagGroup/?name=%E8%87%AA%E5%8A%A8%E5%8C%96%E6%8E%A5%E5%8F%A3%E5%88%9B%E5%BB%BA${randomstring}
+    #查询标签类别id
+    ${tagGroupID}    SelectFromPsycopg    SELECT * FROM "public"."prod_tag_group" WHERE "name"='${information}';
+    Set Suite Variable    ${tagGroupID}    ${tagGroupID}
+
+查看标签类别详情
+    #发送get请求
+    SendGet_Recv200    http://uat.product.simpletour.com    /product/tagGroup/detail/${tagGroupID}/%E8%87%AA%E5%8A%A8%E5%8C%96%E6%8E%A5%E5%8F%A3%E5%88%9B%E5%BB%BA${randomstring}
+
+添加标签
+    #发送post请求
+    ${response}    SendPost_Recv200    http://uat.product.simpletour.com    application/json;charset=UTF-8    {"tagGroupId":${tagGroupID},"id":null,"name":"${information}","version":0}    /product/tag/add
+    Json Value Should Equal    ${response}    /code    0
+
+搜索标签
+    #发送get请求
+    ${response}    SendGet_Recv200    http://uat.product.simpletour.com    /product/tag/list?name=%E8%87%AA%E5%8A%A8%E5%8C%96%E6%8E%A5%E5%8F%A3%E5%88%9B%E5%BB%BA${randomstring}&tagGroupId=${tagGroupID}
+    #查询标签id
+    ${tagID}    SelectFromPsycopg    SELECT * FROM "public"."prod_tag" WHERE "name"='${information}';
+    Set Suite Variable    ${tagID}    ${tagID}
+
+编辑标签
+    #发送post请求
+    ${response}    SendPost_Recv200    http://uat.product.simpletour.com    application/json;charset=UTF-8    {"tagGroupId":${tagGroupID},"id":${tagID},"name":"${information}","version":0}    /product/tag/edit
+
+关联产品
+    #查询将要添加的产品
+    ${response}    SendPost_Recv200    http://uat.product.simpletour.com    application/json;charset=UTF-8    {"tag":"${information}","addedProductIds":[],"deletedProductIds":[],"type":"","name":"","arrive":"","index":1,"size":100}    /product/product/untagged
+    #获取产品列表的第一个产品的id
+    ${productId}    Get Json Value    ${response}    /data/0/productId
+    #添加产品到标签内（只添加第一个产品）
+    ${responsedata}    SendPost_Recv200    http://uat.product.simpletour.com    application/json;charset=UTF-8    {"tagName":"${information}","addedProductIds":[${productId}],"deletedProductIds":[]}    /product/product/batchEdit/products/tags
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除标签
+    #删除标签
+    ${respon}    SendDelete_Recv200    http://uat.product.simpletour.com    /product/tag/delete/${tagID}/%E8%87%AA%E5%8A%A8%E5%8C%96%E6%8E%A5%E5%8F%A3%E5%88%9B%E5%BB%BA${randomstring}
+    Json Value Should Equal    ${respon}    /code    0
+
+删除标签类别
+    ${response}    SendDelete_Recv200    http://uat.product.simpletour.com    /product/tagGroup/delete/${tagGroupID}/%E8%87%AA%E5%8A%A8%E5%8C%96%E6%8E%A5%E5%8F%A3%E5%88%9B%E5%BB%BA${randomstring}
+    Json Value Should Equal    ${response}    /code    0

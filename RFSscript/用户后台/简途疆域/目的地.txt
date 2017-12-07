@@ -1,0 +1,43 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+目的地列表
+    SendGet_Recv200    /app/destination/list
+
+添加目的地
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    接口创建${randomstring}
+    #查询区域
+    ${areaResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    ${areaID}    Get Json Value    ${areaResponse}    /data/0/id
+    ${areaName}    Get Json Value    ${areaResponse}    /data/0/name
+    #添加目的地
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","description":"这是自动化接口创建","version":null,"areaId":${areaID},"areaName":${areaName},"address":"这是自动化接口创建","lat":30.664346,"lon":104.072199,"handbook":"<h3>这里请输入标题</h3>","isRecommend":"false","firstLetter":"J","weight":"1","defaultLocation":"NORMAL","id":null}    /app/destination/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索目的地
+    #创建bodydata
+    ${bodydata}    Create Dictionary    areaId=    name=${information}
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/destination/list
+    #查询目的地id
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_destination" WHERE "name"='${information}';
+    Set Global Variable    ${destinationID}    ${id}
+
+查看目的地
+    SendGet_Recv200    /app/destination/${destinationID}
+
+更新目的地
+    #查询versionID
+    ${versionID}    SelectFromPsycopg    SELECT "version" FROM "public"."app_destination" WHERE "name"='${information}';
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","description":"这是自动化接口创建","version":${versionID},"areaId":${areaID},"areaName":"${information}","address":"这是自动化接口创建","lat":30.664346,"lon":104.072199,"handbook":"<h3>这里请输入标题</h3>","isRecommend":false,"firstLetter":"J","weight":1,"defaultLocation":"NORMAL","id":${destinationID}}    /app/destination/${destinationID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页翻页
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/destination/list?index=${i}&size=10
