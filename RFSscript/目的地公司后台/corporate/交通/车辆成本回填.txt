@@ -1,0 +1,48 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+Library           DatabaseLibrary
+
+*** Test Cases ***
+车辆成本回填列表
+    SendGet_Recv200    /transport/buscostannex
+
+搜索车辆成本回填
+    SendGet_Recv200    /transport/buscostannex/list?startday=&endday=&lianName=&license=
+
+获取回填信息
+    ${today}    Get Time    epoch
+    log    ${today}
+    #查询车辆成本回填id
+    ${id}    SelectFromPsycopg    SELECT "id" FROM "corp"."schedule" WHERE company_id=20000 AND "day"<${today} ORDER BY "id" DESC LIMIT 1;
+    Set Global Variable    ${id}    ${id}
+    SendGet_Recv200    /transport/buscostannex/query/${id}
+    ####获取车牌信息
+    ${license}    SelectFromPsycopg    SELECT license FROM "corp"."schedule" WHERE "id"=${id};
+    Comment    ${license}    decode    ${license}    UTF-8
+    Set Global Variable    ${license}    ${license}
+    ###获取线路名字
+    ${line_name}    SelectFromPsycopg    SELECT line_name FROM "corp"."schedule" WHERE "id"=${id};
+    Set Global Variable    ${line_name}    ${line_name}
+    ###获取线路名字
+    ${osp_name}    SelectFromPsycopg    SELECT osp_name FROM "corp"."schedule" WHERE "id"=${id};
+    Set Global Variable    ${osp_name}    ${osp_name}
+    ####获取出行时间
+    ${day}    SelectFromPsycopg    SELECT "day" FROM "corp"."schedule" WHERE "id"=${id};
+    Set Global Variable    ${day}    ${day}
+    ####装换成正常时间
+    ${time1}    Get Time    \    ${day}
+    ${time}    Fetch From Left    ${time1}    ${SPACE}
+    Set Global Variable    ${time}    ${time}
+
+车辆成本回填
+    Comment    ####首先清除corp.bus_cost_annex表内的对应数据
+    Comment    DeleteFromPsycopg    DELETE FROM corp.bus_cost_annex WHERE schedule_id=${id};
+    Comment    ####初次回填
+    Comment    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "accommodationExpense":"2", \ \ \ \ "fuelExpense":"2", \ \ \ \ "leaseExpense":"2", \ \ \ \ "mealExpense":"2", \ \ \ \ "parkingExpense":"2", \ \ \ \ "tollExpense":"2", \ \ \ \ "day":"${time}", \ \ \ \ "license":"${license}", \ \ \ \ "lineName":"${line_name}", \ \ \ \ "ospName":"${osp_name}", \ \ \ \ "scheduleId":${id} }    /transport/buscostannex/update
+    Comment    Json Value Should Equal    ${resp}    /code    0
+
+10条/页翻页
+    SendGet_Recv200    /transport/buscostannex/list?pageIndex=0&pageSize=10
+
+50条/页翻页
+    SendGet_Recv200    /transport/buscostannex/list?pageIndex=0&pageSize=50

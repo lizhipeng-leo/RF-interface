@@ -1,0 +1,50 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+集合点列表
+    SendGet_Recv200    /app/resource/assemble/list
+
+添加资源
+    ${arearesponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    ${areaID}    Get Json Value    ${arearesponse}    /data/0/id
+    ${areaName}    Get Json Value    ${arearesponse}    /data/0/name
+    ${destinationResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10,"areaId":${areaID}}    /app/destination/select
+    ${destionationID}    Get Json Value    ${destinationResponse}    /data/0/id
+    ${destionationName}    Get Json Value    ${destinationResponse}    /data/0/name
+    Set Suite Variable    ${areaID}    ${areaID}
+    Set Suite Variable    ${areaName}    ${areaName}
+    Set Suite Variable    ${destionationID}    ${destionationID}
+    Set Suite Variable    ${destionationName}    ${destionationName}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    接口创建${randomstring}
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${destionationID}, \ \ \ \ "appDestinationName": ${destionationName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": null, \ \ \ \ "address": "成都", \ \ \ \ "lat": 30.662606, \ \ \ \ "lon": 104.072271, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "title": "车票节点标题", \ \ \ \ \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_resource/af2733ba7a481c0957975be42e4414c7.png", \ \ \ \ \ \ \ \ "content": "车票节点文字" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "title": "行程节点标题", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "行程节点文字" \ \ \ \ }, \ \ \ \ "description": "资源介绍", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": null }    /app/resource/assemble
+    Json Value Should Equal    ${response}    /code    0
+
+搜素资源
+    ${bodydata}    Create Dictionary    name=    appDestinationName=    appDestinationId=    appAreaId=    online=
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/resource/assemble/list
+    #获取ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_resource" WHERE resourcetype='ASSEMBLE' AND "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${assembleID}    ${id}
+
+查看资源信息
+    SendGet_Recv200    /app/resource/assemble/${assembleID}
+
+更新资源信息
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${destionationID}, \ \ \ \ "appDestinationName": ${destionationName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": null, \ \ \ \ "address": "成都", \ \ \ \ "lat": 30.662606, \ \ \ \ "lon": 104.072271, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "title": "车票节点标题", \ \ \ \ \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_resource/af2733ba7a481c0957975be42e4414c7.png", \ \ \ \ \ \ \ \ "content": "车票节点文字" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "title": "行程节点标题", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "行程节点文字" \ \ \ \ }, \ \ \ \ "description": "资源介绍", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": ${assembleID} }    /app/resource/assemble/${assembleID}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+资源上线
+    SendGet_Recv200    /app/resource/${assembleID}/status/true
+
+资源下线
+    SendGet_Recv200    /app/resource/${assembleID}/status/false
+
+删除资源
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/resource/assemble/delete/${assembleID}
+    Json Value Should Equal    ${responsedata}    /code    0

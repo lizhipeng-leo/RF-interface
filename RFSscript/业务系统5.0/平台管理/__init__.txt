@@ -1,0 +1,28 @@
+*** Settings ***
+Suite Setup       CreateLoginSession
+Suite Teardown    DeleteSession
+Library           HttpLibrary.HTTP
+Library           Collections
+Library           String
+Library           DatabaseLibrary
+Library           urllib2
+Library           XML
+Library           RequestsLibrary
+Library           String
+
+*** Keywords ***
+CreateLoginSession
+    #创建头文件和cookie（字典型）
+    ${header}    Create Dictionary    Content-Type=application/json;charset=UTF-8
+    Comment    ${cookie}    Create Dictionary    JSESSIONID=${JSESSIONID}
+    #登录一个http的会话
+    Create Session    api    http://47.93.2.132:30113
+    #发送
+    ${addr}    Post Request    api    /login    { \ \ \ \ "userName": "20002", \ \ \ \ "password": "st20002", \ \ \ \ "rememberMe": false }    headers=${header}
+    log    ${addr.content}
+    #检查点（响应状态为200）
+    Should Be Equal As Strings    ${addr.status_code}    200
+    Set Global Variable    ${api}    api
+
+DeleteSession
+    Delete All Sessions

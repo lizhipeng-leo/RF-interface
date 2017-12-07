@@ -1,0 +1,32 @@
+*** Settings ***
+Resource          ReportCommon.tsv
+
+*** Test Cases ***
+助理销售历史数据列表
+    #发送get请求（助理销售历史数据）
+    SendGet_Recv200    /report/assistant/sale/history/list
+
+搜索数据
+    #创建body数据
+    ${bodydata}    Create Dictionary    assistantName=    productName=    travelStartDate=    travelEndDate=    travelName=
+    #发送post请求（搜索数据）
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /report/assistant/sale/history/list
+
+导出助理销售历史数据
+    #发送get请求（导出助理销售历史数据）
+    GetRequests    /report/assistant/sale/history/export?travelEndDate=2016-08-03T00%3A00%3A00.000%2B08%3A00&tenantId=10000&travelStartDate=2016-08-02T00%3A00%3A00.000%2B08%3A00&productTypes=bus%2Chotel%2Cscenic%2Ccatering%2Centertainment
+
+前十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /report/assistant/sale/history/list?size=10&tenantId=10000&index=${i}
+
+中间十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    300    311
+    \    SendGet_Recv200    /report/assistant/sale/history/list?size=10&tenantId=10000&index=${i}
+
+最后十页翻页
+    #发送get请求（前十页翻页）
+    :FOR    ${i}    IN RANGE    654    664
+    \    SendGet_Recv200    /report/assistant/sale/history/list?size=10&tenantId=10000&index=${i}

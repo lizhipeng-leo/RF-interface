@@ -1,0 +1,36 @@
+*** Settings ***
+Resource          ReportCommon.tsv
+
+*** Test Cases ***
+订单项报表列表
+    #发送get请求（订单项报表）
+    SendGet_Recv200    /report/order/business/list
+
+搜索报表
+    #发送get请求（搜索报表）
+    ${responsedata}    SendGet_Recv200    /report/order/business/list?orderNo=&productName=&contactName=&contactMobile=&travelName=&travelMobile=&travelStartDate=&travelEndDate=&orderStartDate=&orderEndDate=&saleAppName=&saleApp=
+
+查看订单项
+    #发送get请求（查看订单项）
+    SendGet_Recv200    /report/order/business/view/39477
+
+导出订单项报表
+    #创建body数据
+    ${bodydata}    Create Dictionary    tenantId=10000    travelStartDate=2016-12-01    travelEndDate=2016-12-02
+    #发送post请求（导出订单项）
+    PostRequests    application/x-www-form-urlencoded    ${bodydata}    /report/order/business/export
+
+前十页翻页
+    Comment    #发送get请求（前十页翻页）
+    Comment    : FOR    ${i}    IN RANGE    0    11
+    Comment    \    SendGet_Recv200    /report/order/business/list?index=2&size=10&tenantId=10000
+
+中间十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    3000    3011
+    \    SendGet_Recv200    /report/order/business/list?index=2&size=10&tenantId=10000
+
+最后十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    7628    7639
+    \    SendGet_Recv200    /report/order/business/list?index=2&size=10&tenantId=10000

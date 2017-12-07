@@ -1,0 +1,30 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+审核列表
+    SendGet_Recv200    /sale/preferentialApplication
+
+搜索变更审核
+    SendGet_Recv200    /sale/preferentialApplication/list?productPreferentialId=&productPreferentialName=&startTime=&endTime=&applyBy=&status=&startTimeTemp=&endTimeTemp=
+
+变更内容查看
+    #查询审核id
+    ${appID}    SelectFromPsycopg    SELECT "id" FROM "corp"."product_preferential_application" ORDER BY "id" DESC LIMIT 1;
+    Set Suite Variable    ${appID}    ${appID}
+    SendGet_Recv200    /sale/preferentialApplication/detail/${appID}
+
+变更价格查看
+    SendGet_Recv200    /sale/preferentialApplication/price/${appID}
+
+通过审核
+    Comment    此用例已在推荐产品模块运行
+
+驳回审核
+    Comment    此用例已在推荐产品模块运行
+
+10条/页查看
+    SendGet_Recv200    /sale/preferentialApplication/list?pageIndex=0&pageSize=10
+
+50条/页查看
+    SendGet_Recv200    /sale/preferentialApplication/list?pageIndex=0&pageSize=50

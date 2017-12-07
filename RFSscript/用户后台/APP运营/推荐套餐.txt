@@ -1,0 +1,54 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+推荐套餐列表
+    SendGet_Recv200    /app/channelContent/RECOMMEND_PACKAGE/list
+
+添加推荐套餐
+    #查询区域
+    ${areaResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    : FOR    ${i}    IN RANGE    0    10
+    \    ${areaId}    Get Json Value    ${areaResponse}    /data/${i}/id
+    \    ${areaName}    Get Json Value    ${areaResponse}    /data/${i}/name
+    \    Exit For Loop If    ${areaName}=="四川"
+    Set Suite Variable    ${areaId}    ${areaId}
+    Set Suite Variable    ${areaName}    ${areaName}
+    #查询巴士信息
+    : FOR    ${i}    IN RANGE    0    10
+    \    ${busResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/tourism/RECOMMEND_PACKAGE/${areaId}/select
+    \    ${targetName}    Get Json Value    ${busResponse}    /data/${i}/name
+    \    ${targetId}    Get Json Value    ${busResponse}    /data/${i}/id
+    \    ${id}    SelectCountFromPsycopg    SELECT * FROM "public"."app_channel_content" WHERE channel_type='RECOMMEND_PACKAGE' AND target_id=${targetId} AND del='f';
+    \    Exit For Loop If    ${id}==0
+    Set Suite Variable    ${targetName}    ${targetName}
+    Set Suite Variable    ${targetId}    ${targetId}
+    #添加推荐巴士
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "weight": 1, \ \ \ \ "areaId": ${areaId}, \ \ \ \ "areaName": ${areaName}, \ \ \ \ "targetType": "RECOMMEND_PACKAGE", \ \ \ \ "targetName": ${targetName}, \ \ \ \ "targetId": ${targetId}, \ \ \ \ "id": null, \ \ \ \ "version": 0 }    /app/channelContent/add
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索推荐套餐
+    #去掉前后的双引号
+    ${s}    Strip String    ${targetName}    characters=""
+    #创建bodydata
+    ${bodydata}    Create Dictionary    areaId=    name=${s}
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/channelContent/RECOMMEND_PACKAGE/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${busID}    ${id}
+
+查看推荐套餐信息
+    SendGet_Recv200    /app/channelContent/edit/${busID}
+
+更新推荐套餐信息
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "weight": 1, \ \ \ \ "areaId": ${areaId}, \ \ \ \ "areaName": ${areaName}, \ \ \ \ "targetType": "RECOMMEND_PACKAGE", \ \ \ \ "targetName": ${targetName}, \ \ \ \ "targetId": ${targetId}, \ \ \ \ "id": ${busID}, \ \ \ \ "version": 0 }    /app/channelContent/edit
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除推荐套餐
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/channelContent/delete/${busID}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页查看
+    :FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/channelContent/RECOMMEND_PACKAGE/list?index=${i}&size=10

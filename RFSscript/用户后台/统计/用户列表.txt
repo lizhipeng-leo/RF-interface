@@ -1,0 +1,21 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+用户列表
+    SendGet_Recv200    /app/user/list
+
+搜索用户
+    SendGet_Recv200    /app/user/list?mobile=&nickName=&startTime=&endTime=&gender=
+
+前十页查看
+    :FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /app/user/list?endTime=&gender=&index=${i}&mobile=&nickName=&size=10&startTime=
+
+中间十页查看
+    :FOR    ${i}    IN RANGE    4000    4010
+    \    SendGet_Recv200    /app/user/list?endTime=&gender=&index=${i}&mobile=&nickName=&size=10&startTime=
+
+最后十页查看
+    :FOR    ${i}    IN RANGE    8000    8010
+    \    SendGet_Recv200    /app/user/list?endTime=&gender=&index=${i}&mobile=&nickName=&size=10&startTime=

@@ -1,0 +1,168 @@
+*** Settings ***
+Resource          ResourceCommon.tsv
+
+*** Test Cases ***
+查看住宿点列表
+    [Documentation]    描述：验证核心系统产品->车辆->查看住宿点接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（查看住宿点列表）
+    SendGet_Recv200    /resource/hotel/list
+
+添加住宿点
+    [Documentation]    描述：验证核心系统产品->车辆->添加住宿点接口
+    ...
+    ...    author：李志鹏
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    成都${randomstring}
+    #查询目的地
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /resource/destination/select
+    ${destinationID}    Get Json Value    ${response}    /data/0/id
+    ${destinationName}    Get Json Value    ${response}    /data/0/name
+    Set Suite Variable    ${destinationID}    ${destinationID}
+    Set Suite Variable    ${destinationName}    ${destinationName}
+    #发送post请求（添加住宿点）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "destinationId":${destinationID}, \ \ \ \ "destinationName":${destinationName}, \ \ \ \ "name":"${information}", \ \ \ \ "type":"hotel", \ \ \ \ "remark":null, \ \ \ \ "address":"天府广场", \ \ \ \ "longitude":104.072343, \ \ \ \ "latitude":30.663538, \ \ \ \ "version":0, \ \ \ \ "id":null }    /resource/hotel/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索住宿点
+    [Documentation]    描述：验证核心系统产品->车辆->搜索住宿点接口
+    ...
+    ...    author：李志鹏
+    #创建body数据
+    ${bodydata}    Create Dictionary    type=    name=${information}    destinationName=
+    #发送post请求（搜索住宿点）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /resource/hotel/list
+    #获取车辆模板ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${HotelID}    ${id}
+
+查看住宿点信息
+    [Documentation]    描述：验证核心系统产品->车辆->查看住宿点接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（查看住宿点信息）
+    SendGet_Recv200    /resource/hotel/edit/${HotelID}
+
+更新住宿点信息
+    [Documentation]    描述：验证核心系统产品->车辆->更新住宿点接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（更新住宿点信息）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "destinationId": "510100120", \ \ \ \ "destinationName": "成都市", \ \ \ \ "name": "${information}", \ \ \ \ "type": "hotel", \ \ \ \ "remark": null, \ \ \ \ "address": "天府广场", \ \ \ \ "longitude": "104.07", \ \ \ \ "latitude": "30.66", \ \ \ \ "version": 0, \ \ \ \ "id": ${HotelID} }    /resource/hotel/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页翻页
+    [Documentation]    描述：验证核心系统产品->车辆->下一页翻页接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /resource/hotel/list?index=${i}&size=10
+
+最后几页翻页
+    [Documentation]    描述：验证核心系统产品->车辆->翻看最后十页接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（最后几页翻页）
+    : FOR    ${i}    IN RANGE    11    16
+    \    SendGet_Recv200    /resource/hotel/list?index=${i}&size=10
+
+编辑添加到元素内容
+    [Documentation]    描述：验证核心系统产品->车辆->编辑添加到元素内容接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（编辑添加到元素内容）
+    SendGet_Recv200    /resource/procurement/hotel/${HotelID}
+
+住宿添加到元素
+    [Documentation]    描述：验证核心系统产品->车辆->住宿添加到元素接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（住宿添加到元素）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": null, \ \ \ \ "resourceId": ${HotelID}, \ \ \ \ "resourceName": "${information}", \ \ \ \ "resourceType": "hotel", \ \ \ \ "procurementName": "${information}", \ \ \ \ "ospName": "简途", \ \ \ \ "ospId": 10, \ \ \ \ "destinationId": 510100120, \ \ \ \ "remark": null, \ \ \ \ "online": "online", \ \ \ \ "inventory": "occupy", \ \ \ \ "companyId": null, \ \ \ \ "version": null }    /resource/procurement/add
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索元素
+    [Documentation]    描述：验证核心系统车辆->元素->搜索元素接口
+    ...
+    ...    author：李志鹏
+    #创建body数据
+    ${bodydata}    Create Dictionary    name=${information}    destinationName=    resourceName=    resourceType=all    status=all
+    ...    inventory=all
+    #发送post请求（搜索元素）
+    ${responsedata}    SendPost_Recv200    text/html;charset=UTF-8    ${bodydata}    /resource/procurement/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把ID设置为测试套件变量
+    Set Suite Variable    ${procurementID}    ${id}
+
+查看元素价格库存
+    [Documentation]    描述：验证核心系统车辆->元素->查看元素价格接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（查看元素价格库存）
+    SendGet_Recv200    /resource/procurement/stock/list/${procurementID}
+
+添加一天元素价格库存
+    [Documentation]    描述：验证核心系统车辆->元素->添加一天元素价格库存接口
+    ...
+    ...    author：李志鹏
+    #获取当前时间
+    ${y}    ${m}    ${d}    Get Time    year,month,day
+    ${time}    Set Variable    ${y}-${m}-${d}
+    #设置当钱时间为测试套件变量
+    Set Suite Variable    ${time}    ${time}
+    #发送post请求（添加一天元素价格库存）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "adultCost": "1", \ \ \ \ "adultSettlement": "1", \ \ \ \ "adultRetail": "1", \ \ \ \ "childCost": "1", \ \ \ \ "childSettlement": "1", \ \ \ \ "childRetail": "1", \ \ \ \ "date": "${time}", \ \ \ \ "quantity": 1, \ \ \ \ "online": true, \ \ \ \ "rowId": ${procurementID}, \ \ \ \ "op": "edit" }    /resource/procurement/stock/update
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+批量编辑库存信息
+    [Documentation]    描述：验证核心系统车辆->元素->批量编辑库存信息接口
+    ...
+    ...    author：李志鹏
+    #发送get请求（批量编辑库存信息）
+    SendGet_Recv200    /resource/procurement/stock/batchAdd/${procurementID}
+
+批量添加价格库存
+    [Documentation]    描述：验证核心系统车辆->元素->批量添加价格库存接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（批量添加价格库存）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "online": true, \ \ \ \ "startDate": "${time}", \ \ \ \ "endDate": "${time}", \ \ \ \ "daysOfWeek": [ \ \ \ \ \ \ \ \ 1, \ \ \ \ \ \ \ \ 2, \ \ \ \ \ \ \ \ 3, \ \ \ \ \ \ \ \ 4, \ \ \ \ \ \ \ \ 5, \ \ \ \ \ \ \ \ 6, \ \ \ \ \ \ \ \ 7 \ \ \ \ ], \ \ \ \ "quantity": 2, \ \ \ \ "adultCost": "2", \ \ \ \ "adultSettlement": "2", \ \ \ \ "adultRetail": "2", \ \ \ \ "childCost": "2", \ \ \ \ "childSettlement": "2", \ \ \ \ "childRetail": "2", \ \ \ \ "rowId": ${procurementID}, \ \ \ \ "op": "edit" }    /resource/procurement/stock/batchAdd
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除价格库存
+    [Documentation]    描述：验证核心系统车辆->元素->删除价格库存接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（删除价格库存）
+    ${responsedata}    SendDelete_Recv200    /resource/procurement/stock/del/${procurementID}/${time}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除住宿点元素
+    [Documentation]    描述：验证核心系统车辆->元素->删除住宿点元素接口
+    ...
+    ...    author：李志鹏
+    #发送post请求（删除住宿点元素）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /resource/procurement/delete/${procurementID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除住宿点
+    [Documentation]    描述：验证核心系统资源>住宿点>删除住宿点接口
+    ...
+    ...    author：李志鹏
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /resource/hotel/delete/${HotelID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0

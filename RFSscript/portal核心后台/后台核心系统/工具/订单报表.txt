@@ -1,0 +1,30 @@
+*** Settings ***
+Resource          ReportCommon.tsv
+
+*** Test Cases ***
+订单报表列表
+    #发送get请求（订单项报表）
+    SendGet_Recv200    /report/order/financial/list
+
+搜索报表
+    #发送get请求（搜索报表）
+    ${responsedata}    SendGet_Recv200    /report/order/financial/list?status=&orderStartTime=&orderEndTime=&orderId=&orderItemId=&saleAppName=&saleApp=
+
+导出订单项报表
+    #发送get请求（导出订单项报表）
+    GetRequests    /report/order/financial/export?saleAppName=绿野假期
+
+前十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /report/order/financial/list?size=10&index=${i}
+
+中间十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    3000    3011
+    \    SendGet_Recv200    /report/order/financial/list?size=10&index=${i}
+
+最后十页翻页
+    #发送get请求（前十页翻页）
+    : FOR    ${i}    IN RANGE    7628    7639
+    \    SendGet_Recv200    /report/order/financial/list?size=10&index=${i}

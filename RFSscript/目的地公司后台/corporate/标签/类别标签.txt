@@ -1,0 +1,90 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+Library           Selenium2Library
+Library           DateTime
+
+*** Test Cases ***
+一级统计标签-列表
+    ${response}    SendGet_Recv200    /tag/group
+
+一级统计标签-添加
+    #获取一个随机的字符串
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #测试条件变量
+    Set Suite Variable    ${information1}    一级统计标签${randomstring}
+    #发送post请求（创建一级标签）
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information1}","oldName":"","version":0,"id":null}    /tag/group/add
+    #校验响应结果
+    Json Value Should Equal    ${response}    /code    0
+    #找到一级标签组的ID
+    ${TagGroupID}    SelectFromPsycopg    SELECT * \ FROM "corp"."statistic_tag_group" WHERE "name"='${information1}' ;
+    Set Suite Variable    ${TagGroupID}    ${TagGroupID}
+
+一级统计标签-搜索
+    #发送get请求
+    ${resposne}    SendGet_Recv200    /tag/group/list?name=${information1}
+
+一级统计标签-编辑
+    #发送get请求
+    ${resposne}    SendGet_Recv200    tag/group/edit/${TagGroupID}
+    #发送post请求
+    ${post-response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"interface -update","oldName":"${information1}","version":0,"id":${TagGroupID}}    /tag/group/edit
+    #恢复修改的TagGroup名称
+    ${post-response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information1}","oldName":"interface -update","version":1,"id":${TagGroupID}}    /tag/group/edit
+
+二级统计标签列表
+    SendGet_Recv200    /tag/tag/list?tagGroupName=${information1}
+
+二级统计标签-添加
+    #获取一个随机的字符串
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #测试条件变量
+    Set Suite Variable    ${information2}    二级统计标签${randomstring}
+    #发送post请求（创建二级标签）
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information2}","version":0,"id":null,"tagGroupName":"${information1}"}    /tag/tag/add
+    #校验响应结果
+    Json Value Should Equal    ${response}    /code    0
+    #找到二级标签的ID
+    ${TagID}    SelectFromPsycopg    SELECT * \ FROM "corp"."statistic_tag" WHERE "name"='${information2}' ;
+    Set Suite Variable    ${TagID}    ${TagID}
+
+二级统计标签-搜索
+    #发送get请求
+    ${resposne}    SendGet_Recv200    /tag/tag/list?name=${information2}
+
+二级统计标签-资源查看|提交
+    #查看
+    SendGet_Recv200    /tag/tag/resources/${tagID}
+    #提交
+    SendPost_Recv200    application/json;charset=UTF-8    {"tagId":${TagID},"tagName":"${information2}","tagGroup":"${information1}","bindingEntities":[]}    /tag/tag/resources
+
+更新元素列表
+    #查询元素
+    ${respon}    SendPost_Recv200    application/json;charset=UTF-8    {"pageIndex":0,"pageSize":100,"name":"","type":"","ospType":"","ospName":""}    /resource/resource/select
+    ${resourcesID}    Get Json Value    ${respon}    /data/0/id
+    ${resourcesName}    Get Json Value    ${respon}    /data/0/name
+    #更新元素列表
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"tagId":${tagID},"tagName":"${information2}","tagGroup":"${information1}","resources":[{"id":${resourcesID},"name":${resourcesName}}]}    /tag/tag/resources
+    Json Value Should Equal    ${response}    /code    0
+
+二级统计标签-删除
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    \    /tag/tag/delete/${TagID}?tagGroupName=${information1}
+    Json Value Should Equal    ${response}    /code    0
+
+二级统计标签页面10条/页查看
+    SendGet_Recv200    /tag/tag/list?pageIndex=0&pageSize=10&del=false&tagGroupName==${information1}
+
+二级统计标签页面50条/页查看
+    SendGet_Recv200    /tag/tag/list?pageIndex=0&pageSize=50&del=false&tagGroupName=${information1}
+
+删除标签组
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    \    /tag/group/delete/${TagGroupID}
+    Json Value Should Equal    ${response}    /code    0
+
+标签组页面10条/页查看
+    SendGet_Recv200    /tag/group/list?pageIndex=0&pageSize=10&del=false
+
+标签组页面50条/页查看
+    SendGet_Recv200    /tag/group/list?pageIndex=0&pageSize=50&del=false

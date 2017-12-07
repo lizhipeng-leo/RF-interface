@@ -1,0 +1,18 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+简途通查询页面
+    SendGet_Recv200    /mobile/admin/card/card/query
+
+通过手机号查询简途通
+    ${bodydata}    Create Dictionary    type=mobile    value=13648009749
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /mobile/admin/card/card/query
+
+通过身份证号查询简途通
+    ${bodydata}    Create Dictionary    type=idNo    value=652901198705174815
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /mobile/admin/card/card/query
+
+通过简途通卡号查询简途通
+    ${bodydata}    Create Dictionary    type=cardNo    value=132132
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /mobile/admin/card/card/query

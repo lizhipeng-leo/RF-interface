@@ -1,0 +1,64 @@
+*** Settings ***
+Resource          ../common.tsv
+
+*** Test Cases ***
+产品列表查看
+    #发送get请求（产品列表查看）
+    SendGet_Recv200    /distributor/product/agent/list
+
+搜索产品
+    #创建body数据
+    ${bodydata}    Create Dictionary    name=    depart=    arrive=
+    #发送post请求（搜索产品）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /distributor/product/agent/list
+
+产品详情查看
+    #发送get请求（产品详情查看）
+    SendGet_Recv200    /distributor/product/agent/view/32646
+
+价格日历当月查看
+    #发送get请求（价格日历当月查看）
+    SendGet_Recv200    /distributor/product/agent/stock/32646
+
+上一个月价格查看
+    #获取当前时间
+    ${y}    ${m}    ${d}    Get Time    year,month,day
+    #获取小于当前一个月的时间
+    ${m}    Convert To Integer    ${m}
+    ${r}    Run Keyword If    ${m}==1    Set Variable    12
+    ...    ELSE IF    1<${m}<13    Evaluate    ${m}-1
+    ${m1}    Run Keyword If    0<${r}<10    Set Variable    0${r}
+    ...    ELSE IF    ${r}>=10    Set Variable    ${r}
+    log    ${m}
+    #设置前一个月的时间
+    Set Suite Variable    ${time1}    ${y}-${m1}
+    ${m}    Convert To Integer    ${m}
+    ${r}    Run Keyword If    ${m}==12    Set Variable    1
+    ...    ELSE IF    1<=${m}<12    Evaluate    ${m}+1
+    ${m2}    Run Keyword If    0<${r}<10    Set Variable    0${r}
+    ...    ELSE IF    ${r}>=10    Set Variable    ${r}
+    log    ${m}
+    #设置后一个月的时间
+    Set Suite Variable    ${time2}    ${y}-${m2}
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "startDate": "${time1}-01", \ \ \ \ "endDate": "${time1}-29" }    /distributor/product/agent/stock/32646
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一个价格查看
+    #发送post请求
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "startDate": "${time2}-01", \ \ \ \ "endDate": "${time2}-29" }    /distributor/product/agent/stock/32646
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+前十页翻页
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /distributor/product/agent/list?size=10&online=true&index=${i}&totalCount=0
+
+中间十页翻页
+    : FOR    ${i}    IN RANGE    11    20
+    \    SendGet_Recv200    /distributor/product/agent/list?size=10&online=true&index=${i}&totalCount=0
+
+最后十页翻页
+    : FOR    ${i}    IN RANGE    21    31
+    \    SendGet_Recv200    /distributor/product/agent/list?size=10&online=true&index=${i}&totalCount=0

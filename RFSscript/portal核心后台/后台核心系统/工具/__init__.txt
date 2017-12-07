@@ -1,0 +1,25 @@
+*** Settings ***
+Suite Setup       登录获取session
+Library           Selenium2Library
+Library           String
+
+*** Variables ***
+
+*** Keywords ***
+登录获取session
+    #打开浏览器
+    Open Browser    http://uat.report.simpletour.com
+    #输入用户名
+    Input Text    name=userName    100004
+    #输入密码
+    Input Password    name=password    123456
+    #点击登录按钮
+    Click Button    xpath=/html/body/div/div[2]/form/button
+    #获取页面cookie
+    ${c}    Get Cookies
+    log    ${c}
+    #关闭浏览器
+    Close All Browsers
+    @{s}    Split String    ${c}    =
+    Log Many    @{s}[1]
+    Set Global Variable    ${JSESSIONID}    @{s}[1]

@@ -1,0 +1,44 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+启动页广告列表
+    SendGet_Recv200    /app/startPageAd/list
+
+添加广告
+    #查询巴士产品
+    ${busResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /link/APP_BUS/select
+    ${busID}    Get Json Value    ${busResponse}    /data/0/id
+    Set Suite Variable    ${busID}    ${busID}
+    #查询区域
+    ${areaResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    ${areaId}    Get Json Value    ${areaResponse}    /data/0/id
+    ${areaName}    Get Json Value    ${areaResponse}    /data/0/name
+    Set Suite Variable    ${areaId}    ${areaId}
+    Set Suite Variable    ${areaName}    ${areaName}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "adPosition": "START_PAGE", \ \ \ \ "areaId": ${areaId}, \ \ \ \ "areaName": ${areaId}, \ \ \ \ "weight": "1", \ \ \ \ "type": "APP_PACKAGE", \ \ \ \ "url": "simpletour://app/tourismPackage?id=${busID}", \ \ \ \ "pic": "https://images.simpletour.com/simpletour/images/app_activity/dbda9e84f217421262e8bc1bc66d7492.png", \ \ \ \ "startDate": "2016-11-15", \ \ \ \ "endDate": "2016-11-21", \ \ \ \ "id": null, \ \ \ \ "version": 0 }    /app/startPageAd/add
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索广告
+    #创建bodydata
+    ${bodydata}    Create Dictionary    areaId=    name=${information}
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/startPageAd/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${startPageAdID}    ${id}
+
+查看广告信息
+    SendGet_Recv200    /app/startPageAd/edit/${startPageAdID}
+
+更新广告信息
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "adPosition": "START_PAGE", \ \ \ \ "areaId": ${areaId}, \ \ \ \ "areaName": ${areaId}, \ \ \ \ "weight": "1", \ \ \ \ "type": "APP_PACKAGE", \ \ \ \ "url": "simpletour://app/tourismPackage?id=${busID}", \ \ \ \ "pic": "https://images.simpletour.com/simpletour/images/app_activity/dbda9e84f217421262e8bc1bc66d7492.png", \ \ \ \ "startDate": "2016-11-15", \ \ \ \ "endDate": "2016-11-21", \ \ \ \ "id": ${startPageAdID}, \ \ \ \ "version": 0 }    /app/startPageAd/edit
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除广告
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/startPageAd/delete/${startPageAdID}
+    Json Value Should Equal    ${responsedata}    /code    0

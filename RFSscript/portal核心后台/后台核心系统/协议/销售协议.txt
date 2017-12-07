@@ -1,0 +1,50 @@
+*** Settings ***
+Resource          SaleCommon.txt
+
+*** Test Cases ***
+查看销售协议列表
+    #发送get请求（查看销售协议列表）
+    SendGet_Recv200    /agreement/list
+
+搜索销售协议
+    #发送get请求（搜索销售协议）
+    ${responsedata}    SendGet_Recv200    /agreement/list/?appName=美团&enabled=
+    #获取车辆模板ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${saleAgreementID}    ${id}
+
+查看协议内容
+    #发送get请求（查看协议内容）
+    SendGet_Recv200    /agreement/edit/${saleAgreementID}
+
+更新协议内容
+    #发送post请求（更新协议内容）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "appName": "美团", \ \ \ \ "appId": 50, \ \ \ \ "status": "true", \ \ \ \ "remark": null, \ \ \ \ "version": 0, \ \ \ \ "id": 79 }    /agreement/edit
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+协议产品列表查看
+    #发送get请求（协议产品列表查看）
+    SendGet_Recv200    /agreement/product/add/${saleAgreementID}
+
+停用销售协议
+    #创建body数据
+    ${bodydata}    Create Dictionary    status=true
+    #发送post请求（停用销售协议）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /agreement/edit/status/${saleAgreementID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+启用销售协议
+    #创建body数据
+    ${bodydata}    Create Dictionary    status=false
+    #发送post请求（停用销售协议）
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /agreement/edit/status/${saleAgreementID}
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下一页翻页
+    #发送get请求（翻页操作）
+    : FOR    ${i}    IN RANGE    1    8
+    \    SendGet_Recv200    /agreement/list?index=${i}&size=10&totalCount=0

@@ -1,0 +1,6 @@
+*** Settings ***
+Resource          ../common.txt
+
+*** Test Cases ***
+通道模板列表
+    SendGet_Recv200    /channel_template

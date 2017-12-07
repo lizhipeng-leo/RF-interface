@@ -1,0 +1,47 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+主题管理列表
+    SendGet_Recv200    /app/theme/THEME/list
+
+添加主题
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    #添加主题
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": null, \ \ \ \ "url": null, \ \ \ \ "name": "${information}", \ \ \ \ "headImg": "https://images.simpletour.com/simpletour/images/app_tourism/fe77d32813eded732e95db65815fd981.png", \ \ \ \ "introduction": "这是是填写简介的地方", \ \ \ \ "content": "[]", \ \ \ \ "tags": "", \ \ \ \ "weight": null, \ \ \ \ "type": null, \ \ \ \ "online": false, \ \ \ \ "version": 0 }    /app/theme/THEME/add
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+搜索主题
+    ${bodydata}    Create Dictionary    name=    online=
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/theme/THEME/list
+    #获取ID
+    ${id}    Get Element Text    ${responsedata}    body/div[3]/div/table/tbody/tr[1]/td[1]
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${themeID}    ${id}
+
+查看主题信息
+    SendGet_Recv200    /app/theme/THEME/edit/${themeID}
+
+更新主题信息
+    #查询versionID
+    ${id}    SelectFromPsycopg    SELECT "version" FROM "public"."app_theme" WHERE "name"='${information}' AND "type"='THEME';
+    Set Suite Variable    ${versionID}    ${id}
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": ${themeID}, \ \ \ \ "url": "https://m.simpletour.com/mobile/gateway/wechat/theme/null", \ \ \ \ "name": "${information}", \ \ \ \ "headImg": "https://images.simpletour.com/simpletour/images/app_tourism/fe77d32813eded732e95db65815fd981.png", \ \ \ \ "introduction": "这是是填写简介的地方", \ \ \ \ "content": "[]", \ \ \ \ "tags": "", \ \ \ \ "weight": null, \ \ \ \ "type": "THEME", \ \ \ \ "online": false, \ \ \ \ "version": ${versionID} }    /app/theme/THEME/edit
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+上线主题
+    ${bodydata}    Create Dictionary    status=true
+    ${responseBODY}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /app/theme/THEME/status/${themeID}
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+下线主题
+    ${bodydata}    Create Dictionary    status=false
+    ${responseBODY}    SendPost_Recv200    application/x-www-form-urlencoded; charset=UTF-8    ${bodydata}    /app/theme/THEME/status/${themeID}
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+删除主题
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/theme/THEME/delete/${themeID}
+    Json Value Should Equal    ${responseBODY}    /code    0

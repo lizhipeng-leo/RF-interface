@@ -1,0 +1,10 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+助理推送列表
+    SendGet_Recv200    /guide/pushlog/
+
+下一页查看
+    :FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /guide/pushlog/list?index=${i}&size=10

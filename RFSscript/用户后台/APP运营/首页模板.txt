@@ -1,0 +1,47 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+首页模块列表
+    SendGet_Recv200    /app/apptemplete/APP/areas
+
+区域模块内容查看
+    #查询区域id
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_area" WHERE "type"='PROVINCE';
+    #设置为测试套件变量
+    Set Suite Variable    ${areaID}    ${id}
+    SendGet_Recv200    /app/apptemplete/APP/templete/${areaID}
+
+添加A模板位置1的内容为巴士
+    SendGet_Recv200    /app/apptemplete/APP/templete/${areaID}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    接口创建${randomstring}
+    #查询模板id
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_templete_content" WHERE platform='APP' AND app_area_id=${areaID} AND templete='A' AND postion=1;
+    Set Suite Variable    ${A1templeteID}    ${id}
+    #查询巴士信息
+    ${BusResponse}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /link/APP_BUS/select
+    ${AppBusID}    Get Json Value    ${BusResponse}    /data/0/id
+    #添加模板内容
+    ${responsebody}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": ${A1templeteID}, \ \ \ \ "templete": "A", \ \ \ \ "postion": 1, \ \ \ \ "name": "${information}", \ \ \ \ "description": "这是自动化接口创建的哦", \ \ \ \ "type": "APP_PACKAGE", \ \ \ \ "online": true, \ \ \ \ "link": "simpletour://app/tourismPackage?id=${AppBusID}", \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_activity/f3864d91f9de575510c00a7dd4045317.png", \ \ \ \ "isShare": false, \ \ \ \ "shareUrl": "", \ \ \ \ "appAreaId": ${areaID} }    /app/apptemplete/APP/content
+    Json Value Should Equal    ${responsebody}    /code    0
+
+修改A模板位置1的内容为H5
+    ${responseData}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": ${A1templeteID}, \ \ \ \ "templete": "A", \ \ \ \ "postion": 1, \ \ \ \ "name": "${information}", \ \ \ \ "description": "这是自动化接口创建的", \ \ \ \ "type": "H5", \ \ \ \ "online": false, \ \ \ \ "link": "https://www.baidu.com/", \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_activity/ca0f784bae1ff5354ef27744306f26d1.png", \ \ \ \ "isShare": false, \ \ \ \ "shareUrl": "https://www.baidu.com/", \ \ \ \ "appAreaId": ${areaID} }    /app/apptemplete/APP/content
+    Json Value Should Equal    ${responseData}    /code    0
+
+添加A模板位置2的内容
+    #查询模板id
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_templete_content" WHERE platform='APP' AND app_area_id=${areaID} AND templete='A' AND postion=2;
+    Set Suite Variable    ${A2templeteID}    ${id}
+    ${responseData}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": ${A2templeteID}, \ \ \ \ "templete": "A", \ \ \ \ "postion": 2, \ \ \ \ "name": "${information}", \ \ \ \ "description": "这是自动化接口创建的", \ \ \ \ "type": "H5", \ \ \ \ "online": false, \ \ \ \ "link": "https://www.baidu.com/", \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_activity/ca0f784bae1ff5354ef27744306f26d1.png", \ \ \ \ "isShare": false, \ \ \ \ "shareUrl": "https://www.baidu.com/", \ \ \ \ "appAreaId": ${areaID} }    /app/apptemplete/APP/content
+    Json Value Should Equal    ${responseData}    /code    0
+
+添加A模板位置3的内容
+    #查询模板id
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_templete_content" WHERE platform='APP' AND app_area_id=${areaID} AND templete='A' AND postion=3;
+    Set Suite Variable    ${A3templeteID}    ${id}
+    ${responseData}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "id": ${A3templeteID}, \ \ \ \ "templete": "A", \ \ \ \ "postion": 3, \ \ \ \ "name": "${information}", \ \ \ \ "description": "这是自动化接口创建的", \ \ \ \ "type": "H5", \ \ \ \ "online": false, \ \ \ \ "link": "https://www.baidu.com/", \ \ \ \ "image": "https://images.simpletour.com/simpletour/images/app_activity/ca0f784bae1ff5354ef27744306f26d1.png", \ \ \ \ "isShare": false, \ \ \ \ "shareUrl": "https://www.baidu.com/", \ \ \ \ "appAreaId": ${areaID} }    /app/apptemplete/APP/content
+    Json Value Should Equal    ${responseData}    /code    0

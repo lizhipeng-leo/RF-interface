@@ -1,0 +1,31 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+途中玩乐订单列表
+    SendGet_Recv200    /clientOrder/list/PRODUCT
+
+搜索订单
+    ${bodydata}    Create Dictionary    id=    coreOrderId=    sellType=    orderStatus=    payType=
+    ...    productId=    productName=    searchUserName=    searchMobile=    bookStartTime=    bookEndTime=
+    ...    dayStartTime=    dayEndTime=
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /clientOrder/list/PRODUCT
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."client_order" WHERE TYPE='PRODUCT' AND status='PAID' ORDER BY createdtime DESC LIMIT 1 ;
+    Set Suite Variable    ${productOrderID}    ${id}
+
+查看订单详情
+    SendGet_Recv200    /clientOrder/edit/${productOrderID}
+
+标记订单为处理中
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /clientOrder/changeFlag/${productOrderID}/HANDLING
+    Json Value Should Equal    ${responsedata}    /code    0
+
+标记订单为已处理
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /clientOrder/changeFlag/${productOrderID}/SOLVED
+    Json Value Should Equal    ${responsedata}    /code    0
+
+订单导出
+    ${bodydata}    Create Dictionary    id=${productOrderID}    coreOrderId=    sellType=    orderStatus=    payType=
+    ...    productId=    productName=    searchUserName=    searchMobile=    bookStartTime=    bookEndTime=
+    ...    dayStartTime=    dayEndTime=
+    PostRequests    application/x-www-form-urlencoded    ${bodydata}    /clientOrder/list/PRODUCT/export

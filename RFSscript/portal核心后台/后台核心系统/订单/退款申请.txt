@@ -1,0 +1,27 @@
+*** Settings ***
+Resource          OrderCommon.tsv
+
+*** Test Cases ***
+退款申请列表
+    #发送get请求（退款申请列表）
+    SendGet_Recv200    /refund/list
+
+搜索退款申请
+    #发送get请求（搜索退款申请）
+    SendGet_Recv200    /refund/list?businessOrderId=&productName=&tripTime=&status=
+
+查看退款申请
+    #发送get请求（查看退款申请）
+    SendGet_Recv200    /refund/edit/${Item_ID}
+
+同意退款
+    #发送post请求（同意退款）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "status": "FINISHED", \ \ \ \ "itemId": "${Item_ID}", \ \ \ \ "reason": "", \ \ \ \ "orderMoney": "1", \ \ \ \ "ratio": "0%", \ \ \ \ "refundAmount": "0", \ \ \ \ "remark": "" }    /refund/refundChose
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0
+
+拒绝退款
+    #发送post请求（拒绝退款）
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "status": "REJECTED", \ \ \ \ "itemId": "${Item_ID_1}", \ \ \ \ "orderMoney": "1", \ \ \ \ "ratio": "0%", \ \ \ \ "refundAmount": "0", \ \ \ \ "reason": "", \ \ \ \ "remark": "" }    /refund/refundChose
+    #验证是否添加成功（成功为0，失败为1）
+    Json Value Should Equal    ${responsedata}    /code    0

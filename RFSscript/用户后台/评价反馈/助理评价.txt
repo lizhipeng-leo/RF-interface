@@ -1,0 +1,13 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+助理评价列表
+    SendGet_Recv200    /app/assistantSurvey/list
+
+搜索评价
+    SendGet_Recv200    /app/assistantSurvey/list?startTime=&endTime=&targetName=&assistantName=
+
+导出助理评价列表
+    ${bodydata}    Create Dictionary    startTime=    endTime=    targetName=    assistantName=
+    PostRequests    application/x-www-form-urlencoded    ${bodydata}    /app/assistantSurvey/export

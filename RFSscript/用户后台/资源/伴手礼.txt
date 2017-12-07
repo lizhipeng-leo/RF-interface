@@ -1,0 +1,54 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+查看伴手礼资源列表
+    SendGet_Recv200    /app/resource/gift/list
+
+新增伴手礼资源
+    #查询区域
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /app/area/select
+    #获取区域的请求体
+    ${areaID}    Get Json Value    ${response}    /data/0/id
+    Set Suite Variable    ${areaID}    ${areaID}
+    ${areaName}    Get Json Value    ${response}    /data/0/name
+    Set Suite Variable    ${areaName}    ${areaName}
+    #发送post请求（查询目的地）
+    ${responsebody}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10,"areaId":${areaID}}    /app/destination/select
+    #获取所属目的地的请求体
+    ${DestinationId}    Get Json Value    ${responsebody}    /data/0/id
+    Set Suite Variable    ${DestinationId}    ${DestinationId}
+    ${DestinalionName}    Get Json Value    ${responsebody}    /data/0/name
+    Set Suite Variable    ${DestinalionName}    ${DestinalionName}
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${DestinationId}, \ \ \ \ "appDestinationName": ${DestinalionName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_resource/7553887703581b90fdd8a911c56e7bd4.png", \ \ \ \ "address": "成都", \ \ \ \ "lat": 30.660556, \ \ \ \ "lon": 104.073852, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": null }    /app/resource/gift
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+搜索伴手礼资源
+    ${bodydata}    Create Dictionary    name=    appDestinationName=    appDestinationId=    appAreaId=    online=
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /app/resource/gift/list
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."app_resource" WHERE "name"='${information}';
+    Set Suite Variable    ${giftID}    ${id}
+
+查看伴手礼资源信息
+    SendGet_Recv200    /app/resource/gift/${giftID}
+
+更新伴手礼资源信息
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "appDestinationId": ${DestinationId}, \ \ \ \ "appDestinationName": ${DestinalionName}, \ \ \ \ "appTagId": null, \ \ \ \ "appTagName": null, \ \ \ \ "appAreaId": ${areaID}, \ \ \ \ "appAreaName": ${areaName}, \ \ \ \ "images": "https://images.simpletour.com/simpletour/images/app_resource/7553887703581b90fdd8a911c56e7bd4.png", \ \ \ \ "address": "成都", \ \ \ \ "lat": 30.660556, \ \ \ \ "lon": 104.073852, \ \ \ \ "weight": 1, \ \ \ \ "isFree": false, \ \ \ \ "openTime": null, \ \ \ \ "showDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "tourismDescription": { \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ "image": "", \ \ \ \ \ \ \ \ "content": "" \ \ \ \ }, \ \ \ \ "description": "<h3>这里请输入标题</h3>", \ \ \ \ "supplierName": "", \ \ \ \ "supplierMobile": "", \ \ \ \ "id": ${giftID} }    /app/resource/gift/${giftID}
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+上线伴手礼资源
+    ${responseBODY}    SendGet_Recv200    /app/resource/${giftID}/status/true
+    Json Value Should Equal    ${responseBODY}    /code    1
+
+下线伴手礼资源
+    ${responseBODY}    SendGet_Recv200    /app/resource/${giftID}/status/false
+    Json Value Should Equal    ${responseBODY}    /code    0
+
+删除伴手礼资源
+    ${responseBODY}    SendPost_Recv200    application/json;charset=UTF-8    \    /app/resource/gift/delete/${giftID}
+    Json Value Should Equal    ${responseBODY}    /code    0

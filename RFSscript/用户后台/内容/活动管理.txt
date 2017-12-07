@@ -1,0 +1,88 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+活动管理列表
+    SendGet_Recv200    /mobile/admin/wechat/act/activity/activities
+
+添加活动
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","id":null}    /mobile/admin/wechat/act/activity/activity
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索活动
+    ${bodydata}    Create Dictionary    name=${information}    type=activity
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /mobile/admin/wechat/act/activity/activities
+    #获取ID
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."act_activity" WHERE "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${activityID}    ${id}
+
+页面管理
+    SendGet_Recv200    /mobile/admin/wechat/act/page/pages/?id=${activityID}
+
+添加新的页面
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","color":"0000FF","version":null,"activityId":${activityID},"id":null}    /mobile/admin/wechat/act/page/page
+    Json Value Should Equal    ${responsedata}    /code    0
+
+搜索页面
+    ${bodydata}    Create Dictionary    name=${information}    activityId=${activityID}
+    ${responsedata}    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /mobile/admin/wechat/act/page/pages
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."act_page" WHERE activity_id=${activityID} AND "name"='${information}';
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${pageID}    ${id}
+
+查看页面信息
+    SendGet_Recv200    /mobile/admin/wechat/act/edit/page/${pageID}
+
+添加页面无边距图片
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "jumpInfos": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "appLink": "https://www.baidu.com", \ \ \ \ \ \ \ \ \ \ \ \ "imgUrl": "https://images.simpletour.com/simpletour/images/wechat_act/10e5564bb738d3ddf210d0f83f485fde.png", \ \ \ \ \ \ \ \ \ \ \ \ "jumpType": "H5", \ \ \ \ \ \ \ \ \ \ \ \ "targetName": "", \ \ \ \ \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ \ \ \ \ "wechatLink": "https://www.baidu.com" \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "version": null, \ \ \ \ "id": null, \ \ \ \ "weight": 1, \ \ \ \ "pageId": ${pageID}, \ \ \ \ "type": "img", \ \ \ \ "sourceType": "IMG" }    /mobile/admin/wechat/act/module/img
+    Json Value Should Equal    ${responsedata}    /code    0
+
+添加页面单图模块
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${singleImgName}    自动化接口创建单图模块${randomstring}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${singleImgName}", \ \ \ \ "jumpInfos": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "appLink": "https://www.baidu.com", \ \ \ \ \ \ \ \ \ \ \ \ "imgUrl": "https://images.simpletour.com/simpletour/images/app_line/d523382b5e0c52618ae240ba9fc383ec.png", \ \ \ \ \ \ \ \ \ \ \ \ "jumpType": "H5", \ \ \ \ \ \ \ \ \ \ \ \ "targetName": "", \ \ \ \ \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ \ \ \ \ "wechatLink": "https://www.baidu.com" \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "version": null, \ \ \ \ "goods": [], \ \ \ \ "id": null, \ \ \ \ "weight": 2, \ \ \ \ "pageId": ${pageID}, \ \ \ \ "type": "singleimg", \ \ \ \ "sourceType": "IMG" }    /mobile/admin/wechat/act/module/singleimg
+    Json Value Should Equal    ${responsedata}    /code    0
+
+添加页面双图模块
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    6    [LOWER][UPPER]
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${doubleImgName}    自动化接口创建双图模块${randomstring}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${doubleImgName}", \ \ \ \ "jumpInfos": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "appLink": "https://www.baidu.com", \ \ \ \ \ \ \ \ \ \ \ \ "imgUrl": "https://images.simpletour.com/simpletour/images/app_line/4968d2fd542a368ec24e2fcc473b4a39.png", \ \ \ \ \ \ \ \ \ \ \ \ "jumpType": "H5", \ \ \ \ \ \ \ \ \ \ \ \ "targetName": "", \ \ \ \ \ \ \ \ \ \ \ \ "title": "", \ \ \ \ \ \ \ \ \ \ \ \ "wechatLink": "https://www.baidu.com" \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "version": null, \ \ \ \ "goods": [], \ \ \ \ "id": null, \ \ \ \ "weight": 3, \ \ \ \ "pageId": ${pageID}, \ \ \ \ "type": "doubleimg", \ \ \ \ "sourceType": "IMG" }    /mobile/admin/wechat/act/module/doubleimg
+    Json Value Should Equal    ${responsedata}    /code    0
+
+更新页面信息
+    ${id}    SelectFromPsycopg    SELECT "version" FROM "public"."act_page" WHERE activity_id=${activityID} AND "name"='${information}';
+    Set Suite Variable    ${versionID}    ${id}
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","color":"0000FF","version":${versionID},"activityId":${activityID},"id":${pageID}}    /mobile/admin/wechat/act/page/page/${pageID}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+上线页面
+    ${responsedata}    SendGet_Recv200    /mobile/admin/wechat/act/page/${pageID}/status/true
+    Json Value Should Equal    ${responsedata}    /code    0
+
+下线页面
+    ${responsedata}    SendGet_Recv200    /mobile/admin/wechat/act/page/${pageID}/status/false
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除页面
+    ${responsedata}    SendGet_Recv200    /mobile/admin/wechat/act/page/${pageID}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+修改活动名称
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"${information}","id":${activityID}}    /mobile/admin/wechat/act/activity/activity/${activityID}
+    Json Value Should Equal    ${responsedata}    /code    0
+
+删除活动
+    ${responsedata}    SendGet_Recv200    /mobile/admin/wechat/act/activity/del/${activityID}
+
+下一页
+    : FOR    ${i}    IN RANGE    1    10
+    \    SendGet_Recv200    /mobile/admin/wechat/act/activity/activities?index=${i}&size=10

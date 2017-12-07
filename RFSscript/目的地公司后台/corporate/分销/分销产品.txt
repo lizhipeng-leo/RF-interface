@@ -1,0 +1,4 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***

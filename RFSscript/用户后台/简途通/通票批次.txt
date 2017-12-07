@@ -1,0 +1,34 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+通票批次列表
+    SendGet_Recv200    /mobile/admin/card/batch/batches
+
+添加通票批次
+    #查询使用地区
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    {"name":"","index":1,"size":10}    /mobile/admin/area/query
+    ${areaName}    Get Json Value    ${responsedata}    /data/0/name
+    #获取一个随机的账号
+    ${randomstring}    Generate Random String    4    [LOWER][UPPER]
+    Set Suite Variable    ${randomstring}    ${randomstring}
+    #把助理信息设置为测试套变量
+    Set Suite Variable    ${information}    自动化接口创建${randomstring}
+    ${response}    SendPost_Recv200    application/json;charset=UTF-8    { \ \ \ \ "name": "${information}", \ \ \ \ "saleStartDate": "2016-12-01 10:09", \ \ \ \ "saleEndDate": "2017-11-30 00:00", \ \ \ \ "denomination": "100", \ \ \ \ "price": "0.01", \ \ \ \ "count": "1", \ \ \ \ "saleLimit": "1", \ \ \ \ "bindingDeadline": "2017-12-01 00:00", \ \ \ \ "validity": "1", \ \ \ \ "type": "电子卡", \ \ \ \ "productDesc": "<h3>这里请输入标题</h3>", \ \ \ \ "useDesc": "<h3>这里请输入标题</h3>", \ \ \ \ "imageUrls": [ \ \ \ \ \ \ \ \ { \ \ \ \ \ \ \ \ \ \ \ \ "url": "https://images.simpletour.com/simpletour/images/card_batch/66d005c0f200cb0e7ff79b06b89ed44c.png", \ \ \ \ \ \ \ \ \ \ \ \ "title": "" \ \ \ \ \ \ \ \ } \ \ \ \ ], \ \ \ \ "areaNameList": ${areaName}, \ \ \ \ "weight": "1" }    /mobile/admin/card/batch/add/validation
+    Json Value Should Equal    ${response}    /code    0
+    SendGet_Recv200    /mobile/admin/card/batch/add
+
+搜索通票
+    ${responsedata}    SendGet_Recv200    /mobile/admin/card/batch/batches?batchNo=&name=%E8%87%AA%E5%8A%A8%E5%8C%96%E6%8E%A5%E5%8F%A3%E5%88%9B%E5%BB%BA${randomstring}&areaIds=&type=&online=
+    ${id}    SelectFromPsycopg    SELECT * FROM "public"."stpass_card_batch" ORDER BY createdtime DESC;
+    #把渠道ID设置为测试套件变量
+    Set Suite Variable    ${batchID}    ${id}
+
+查看通票
+    SendGet_Recv200    /mobile/admin/card/batch/detail/${batchID}
+
+通票下线
+    SendGet_Recv200    /mobile/admin/card/batch/${batchID}/status/false
+
+通票上线
+    SendGet_Recv200    /mobile/admin/card/batch/${batchID}/status/true

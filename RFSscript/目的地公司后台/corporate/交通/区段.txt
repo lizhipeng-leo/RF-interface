@@ -1,0 +1,31 @@
+*** Settings ***
+Resource          ../资源/ResourceCommon.tsv
+
+*** Test Cases ***
+区段列表查看
+    SendGet_Recv200    /transport/section
+
+区段搜索
+    SendGet_Recv200    /transport/section/list?id=&name=&depart=&arrive=&lineName=&soldOut=
+
+区段价格查看页面
+    #获取新增的区#an段id
+    ${LineSection_id}    SelectFromPsycopg    SELECT * FROM "corp"."section" WHERE company_id=20000 ORDER BY "id" DESC LIMIT 1;
+    Set Global Variable    ${LineSection_id}    ${LineSection_id}
+    #价格查看页面
+    SendGet_Recv200    /transport/section/price/view/${LineSection_id}
+
+区段价格查询
+    #获取当前时间
+    ${year}    ${mouth}    ${day}    Get Time    year,month,day
+    ${time}    Set Variable    ${year}-${mouth}-${day}
+    ${resp}    SendPost_Recv200    application/json;charset=UTF-8    {"sectionId":${LineSection_id},"startTime":"2017-10-01","endTime":"2017-10-31"}    /transport/section/price/list
+    Json Value Should Equal    ${resp}    /code    0
+
+每页10/条分页查看
+    : FOR    ${i}    IN RANGE    0    5
+    \    SendGet_Recv200    /transport/section/list?getRoutes=false&pageIndex=${i}&pageSize=10
+
+每页50/条分页查看
+    : FOR    ${i}    IN RANGE    0    4
+    \    SendGet_Recv200    /transport/section/list?getRoutes=false&pageIndex=${i}&pageSize=50

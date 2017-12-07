@@ -1,0 +1,21 @@
+*** Settings ***
+Resource          ../common.tsv
+
+*** Test Cases ***
+区段列表
+    SendGet_Recv200    /transport/section
+
+搜索区段
+    SendGet_Recv200    /transport/section/list?id=&name=&depart=&arrive=&lineName=&soldOut=
+
+下一页查看
+    SendGet_Recv200    /transport/section/list?pageIndex=1&pageSize=10
+
+页面跳转
+    SendGet_Recv200    /transport/section/list?pageIndex=1&pageSize=10
+
+10条/页查看
+    SendGet_Recv200    /transport/section/list?pageIndex=0&pageSize=10
+
+50条/页查看
+    SendGet_Recv200    /transport/section/list?pageIndex=0&pageSize=50

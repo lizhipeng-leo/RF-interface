@@ -1,0 +1,18 @@
+*** Settings ***
+Resource          MarsCommon.tsv
+
+*** Test Cases ***
+录单日志列表查看
+    #发送get请求（录单日志列表查看）
+    SendGet_Recv200    /mars/record/list
+
+录单日志搜索
+    #创建body数据
+    ${bodydata}    Create Dictionary    orderId=    source=简途线上自营    sourceName=    operation=    operatorName=
+    ...    opeStartDate=    opeEndDate=    opeStartTimeTemp=    opeEndTimeTemp=
+    #发送post请求（录单日志搜索）
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /mars/record/list
+
+录单日志导出
+    #发送get请求（录单日志导出）
+    GetRequests    /mars/record/export?operation=MODIFY&opeStartTimeTemp=&opeEndTimeTemp=

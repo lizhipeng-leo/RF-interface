@@ -1,0 +1,26 @@
+*** Settings ***
+Resource          common.tsv
+Library           Selenium2Library
+
+*** Test Cases ***
+分销订单列表
+    SendGet_Recv200    /distributor/order/list
+
+搜索订单
+    #创建body数据
+    ${bodydata}    Create Dictionary    orderId=    itemId=    productName=    orderStartTime=    orderEndTime=
+    ...    travelStartDate=    travelEndDate=    agentName=    agentId=    distributorName=    distributorId=
+    #发送post请求
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /distributor/order/list
+
+查看订单
+    #从数据库里面查询订单id
+    ${id}    SelectFromPsycopg    SELECT * FROM "dist"."order" WHERE "name" LIKE '%自动化接口测试%'order BY createdtime DESC;
+    #设置订单id为全局变量
+    Set Suite Variable    ${disID}    ${id}
+    #发送get请求
+    SendGet_Recv200    /distributor/order/edit/${disID}
+
+前十页翻页
+    : FOR    ${i}    IN RANGE    1    11
+    \    SendGet_Recv200    /distributor/order/list?index=${i}&totalCount=0&size=10

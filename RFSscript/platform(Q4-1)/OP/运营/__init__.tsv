@@ -1,0 +1,22 @@
+*Settings*							
+Suite Setup	获取cookie						
+Library	Selenium2Library						
+Library	String						
+							
+*Keywords*							
+获取cookie	#打开浏览器						
+	Open Browser	http://insideplatformop.simpletour.com/home					
+	#输入用户名						
+	Input Text	name=userName	lizhipeng@simpletour.com				
+	#输入密码						
+	Input Password	name=password	123456				
+	#点击登录按钮						
+	Click Button	xpath=//button[@type='submit']					
+	#获取页面cookie						
+	${c}	Get Cookies					
+	log	${c}					
+	#关闭浏览器						
+	Close All Browsers						
+	@{s}	Split String	${c}	=			
+	Log Many	@{s}[1]					
+	Set Global Variable	${JSESSIONID}	@{s}[1]				

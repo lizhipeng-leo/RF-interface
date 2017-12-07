@@ -1,0 +1,31 @@
+*** Settings ***
+Resource          common.tsv
+
+*** Test Cases ***
+拼玩订单列表
+    SendGet_Recv200    /clientOrder/list/CROWD_FUNDING
+
+搜索订单
+    ${bodydata}    Create Dictionary    id=    coreOrderId=    sellType=    orderStatus=    payType=
+    ...    productId=    productName=    searchUserName=    searchMobile=    bookStartTime=    bookEndTime=
+    ...    dayStartTime=    dayEndTime=
+    SendPost_Recv200    application/x-www-form-urlencoded    ${bodydata}    /clientOrder/list/CROWD_FUNDING
+    ${ID}    SelectFromPsycopg    SELECT * FROM "public"."client_order" WHERE TYPE='CROWD_FUNDING' AND status='PAID' ORDER BY createdtime DESC LIMIT 1 ;
+    Set Suite Variable    ${CROWD_FUNDINGID}    ${ID}
+
+查看订单详情
+    SendGet_Recv200    /clientOrder/edit/${CROWD_FUNDINGID}
+
+标记订单为处理中
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /clientOrder/changeFlag/${CROWD_FUNDINGID}/HANDLING
+    Json Value Should Equal    ${responsedata}    /code    0
+
+标记订单为已处理
+    ${responsedata}    SendPost_Recv200    application/json;charset=UTF-8    \    /clientOrder/changeFlag/${CROWD_FUNDINGID}/SOLVED
+    Json Value Should Equal    ${responsedata}    /code    0
+
+订单导出
+    ${bodydata}    Create Dictionary    id=${CROWD_FUNDINGID}    coreOrderId=    sellType=    orderStatus=    payType=
+    ...    productId=    productName=    searchUserName=    searchMobile=    bookStartTime=    bookEndTime=
+    ...    dayStartTime=    dayEndTime=
+    PostRequests    application/x-www-form-urlencoded    ${bodydata}    /clientOrder/list/CROWD_FUNDING/export
